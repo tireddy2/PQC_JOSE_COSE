@@ -20,10 +20,10 @@ keyword:
  
 
 venue:
-  group: "cose"
+  group: "cose" 
   type: "Working Group"
-  mail: "cose@ietf.org"
-  arch: "https://mailarchive.ietf.org/arch/browse/cose/"
+  mail: "cose@ietf.org" 
+  arch: "https://mailarchive.ietf.org/arch/browse/cose/" 
   
 
 stand_alone: yes
@@ -113,6 +113,8 @@ KEMs are typically used in cases where two parties, hereby refereed to as the "e
 The JSON Web Algorithms (JWA) {{?RFC7518}} in Section 4.6 defines two ways of using the key agreement result. When Direct Key Agreement is employed, the shared secret established through the Traditional Algorithm will be the content encryption key (CEK). When Key Agreement with Key Wrapping is employed, the shared secret established through the Traditional Algorithm will wrap the CEK. If multiple recipients are needed, then the version with key wrap is used. Similarly, COSE in Sections 8.5.4 and 8.5.5 {{?RFC9052}} defines the Direct Key Agreement and Key Agreement with Key Wrap classes. This document proposes the use of Post-Quantum Algorithms in these two modes.
 
 It is essential to note that in the PQ-KEM, one needs to apply Fujisaki-Okamoto {{FO}} transform or its variant {{HHK}} on the PQC KEM part to ensure that the overall scheme is IND-CCA2 secure as mentioned in {{?I-D.ietf-tls-hybrid-design}}. The FO transform is performed using the KDF such that the PQC KEM shared secret achieved is IND-CCA2 secure. In this case, one can re-use the PQC KEM public keys but depending on some upper bound that must adhered to.
+
+Note that during the transition from traditional to post-quantum algorithms, there may be a desire or a requirement for protocols that incorporate both types of algorithms until the post-quantum algorithms are fully trusted. The terminology for Post-Quantum and Traditional Hybrid Schemes is defined in {{?I-D.ietf-pquip-pqt-hybrid-terminology}}. HPKE with COSE and JOSE is presented in {{?I-D.ietf-rha-jose-hpke-encrypt}} and {{?I-D.ietf-cose-hpke}}. These specifications can be extended to support hybrid post-quantum Key Encapsulation Mechanisms (KEMs) as defined in {{?I-D.ietf-westerbaan-cfrg-hpke-xyber768d00}}.
 
 # KEM PQC Algorithms
 
