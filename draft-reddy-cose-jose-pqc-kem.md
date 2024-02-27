@@ -158,7 +158,7 @@ The message decryption process is as follows.
 
           SS' = kemDecaps(recipPrivKey, CT)
 
-   If the decapsulation operation outputs an error, output "decryption error", and stop.
+    If the decapsulation operation outputs an error, output "decryption error", and stop.
 
 2.  Derive the final shared secret SS of length SSLen bytes from
     the inital secret SS' using the underlying key derivation
@@ -179,19 +179,17 @@ If the 'alg' header parameter is set to the 'PQ-Direct' value (as defined in {{I
 
 ## Direct key agreement 
 
-*  The "alg" Header Parameter MUST be "PQ-Direct", "enc" MUST be an PQ KEM algorithm from JSON Web Signature and Encryption Algorithms in {{JOSE-IANA}} and they MUST occur only within the JWE Protected Header.
+*  The "alg" Header Parameter MUST be "PQ-Direct", "enc" MUST be an PQ-KEM algorithm from JSON Web Signature and Encryption Algorithms in {{JOSE-IANA}} and they MUST occur only within the JWE Protected Header.
 
 *  The JWE Ciphertext must include the concatenation of the output ('ct') from the PQ KEM Encaps algorithm, encoded using base64url, along with the base64url-encoded ciphertext output obtained by encrypting the plaintext using the Content Encryption Key (CEK). This encryption process corresponds to step 15 of the {{RFC7518}}. 
 
-* The recipient will seperate the 'ct' (output from the PQ KEM Encaps algorithm) from JWE Ciphertext to decode it and then derive the CEK using the process defined in {{decrypt}}.
+* The recipient will seperate the 'ct' (output from the PQ KEM Encaps algorithm) from JWE Ciphertext to decode it and then derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEM are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
 *  The JWE Encrypted Key MUST be absent.
 
-*  The HPKE "aad" parameter MUST be set to the JWE Additional Authenticated Data encryption parameter defined in Step 14 of Section 5.1 of {{RFC7516}} as input. 
-
 ## Key Agreement with Key Wrapping
 
-The plaintext will be encrypted using the CEK as explained in Step 15 of Section 5.1 of {{RFC7516}}. The 'enc' (Encryption Algorithm) Header Parameter MUST be a content encryption algorithm from JSON Web Signature and Encryption Algorithms in {{JOSE-IANA}}. 
+The CEK will be generated using the process explained in {{decrypt}}. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. The 'enc' (Encryption Algorithm) Header Parameter MUST specify a content encryption algorithm from the JSON Web Signature and Encryption Algorithms defined in {{JOSE-IANA}}.
 
 # JOSE Ciphersuite Registration {#JOSE-PQ-KEM}
 
@@ -236,11 +234,11 @@ The following table maps terms between JOSE and COSE for PQ-KEM ciphersuites.
         +==============+===================+====================+================================+
         | Name                          | Value  | Description                     | Recommended |
         +===================+===========+========+======================---========+=============+
-        | PQ-MLKEM512-SHA3-256-AES256   | TBD1   | ML-KEM-512 + SHA3-256 + AES256  | No          |
+        | PQ-MLKEM512-SHA3-256-AES128   | TBD1   | ML-KEM-512 + SHA3-256 + AES256  | No          |
         +-------------------------------+--------+---------------------------------+-------------+        
-        | PQ-MLKEM768-SHA3-384-AES256   | TBD1   | ML-KEM-768 + SHA3-384 + AES256  | No          |
+        | PQ-MLKEM768-SHA3-384-AES256   | TBD2   | ML-KEM-768 + SHA3-384 + AES256  | No          |
         +-------------------------------+--------+---------------------------------+-------------+
-        | PQ-MLKEM768-SHA3-512-AES256   | TBD2   | ML-KEM-1024 + SHA3-512 + AES256 | No          |
+        | PQ-MLKEM768-SHA3-512-AES256   | TBD3   | ML-KEM-1024 + SHA3-512 + AES256 | No          |
         +-------------------------------+--------+---------------------------------+-------------+   
 
                                        Table 2
@@ -298,13 +296,13 @@ The following has to be added to the "COSE Algorithms" registry:
 - Recommended: No
 
 - Name: PQ-MLKEM768-SHA3-384-AES256
-- Value: TBD1
+- Value: TBD2
 - Description: Cipher suite for PQ-KEM that uses ML-KEM-768 PQ-KEM, the SHA3-384 KDF and the AES-256-GCM AEAD.
 - Reference: This document (TBD)
 - Recommended: No
 
 - Name: PQ-MLKEM1024-SHA3-512-AES256
-- Value: TBD1
+- Value: TBD3
 - Description: Cipher suite for PQ-KEM that uses ML-KEM-1024 PQ-KEM, the SHA3-512 KDF and the AES-256-GCM AEAD.
 - Reference: This document (TBD)
 - Recommended: No
