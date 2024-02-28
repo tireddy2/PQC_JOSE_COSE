@@ -37,6 +37,13 @@ author:
     region: Karnataka
     country: India
     email: "kondtir@gmail.com"
+-
+    fullname: Aritra Banerjee
+    organization: Nokia
+    city: Munich
+    country: Germany
+    email: "aritra.banerjee@nokia.com"
+    
  
 normative:
   RFC2119:
@@ -90,13 +97,14 @@ are ML-KEM-512, ML-KEM-768, and ML-KEM-1024.
 # Conventions and Definitions
 
 {::boilerplate bcp14-tagged}
+
 This document makes use of the terms defined in {{?I-D.ietf-pquip-pqt-hybrid-terminology}}. For the purposes of this document, it is helpful to be able to divide cryptographic algorithms into two classes:
 
 "Traditional Algorithm":  An asymmetric cryptographic algorithm based on integer factorisation, finite field discrete logarithms or elliptic curve discrete logarithms. In the context of JOSE, examples of traditional key exchange algorithms include Elliptic Curve Diffie-Hellman Ephemeral Static {{?RFC6090}} {{?RFC8037}}. In the context of COSE, examples of traditional key exchange algorithms include Ephemeral-Static (ES) DH and Static-Static (SS) DH {{?RFC9052}}. 
 
 "Post-Quantum Algorithm":  An asymmetric cryptographic algorithm that is believed to be secure against attacks using quantum computers as well as classical computers. Post-quantum algorithms can also be called quantum-resistant or quantum-safe algorithms. Examples of Post-Quantum Algorithm include ML-KEM.
 
-## Post-Quantum Key Encapsulation Mechanisms
+## Key Encapsulation Mechanisms
 
 For the purposes of this document, we consider a Key Encapsulation Mechanism (KEM) to be any asymmetric cryptographic scheme comprised of algorithms satisfying the following interfaces [PQCAPI].  
 
@@ -127,8 +135,7 @@ NIST announced as well that they will be [opening a fourth round](https://csrc.n
 
 ## ML-KEM
 
-ML-KEM offers several parameter sets with varying levels of security and performance trade-offs. This document specifies the use of the ML-KEM algorithm at three security levels: ML-KEM-512, ML-KEM-768, and ML-KEM-1024. ML-KEM key generation, encapsulation and decaspulation functions are defined in {{?I-D.cfrg-schwabe-kyber}}.    The main security property for KEMs standardized in the NIST Post-Quantum Cryptography Standardization Project 
-is indistinguishability under adaptive chosen ciphertext attacks (IND-CCA2) (Section 10.2 of {{?I-D.ietf-pquip-pqc-engineers}}). The public/private key sizes, ciphertext key size, and PQ security levels of ML-KEM are detailed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+ML-KEM offers several parameter sets with varying levels of security and performance trade-offs. This document specifies the use of the ML-KEM algorithm at three security levels: ML-KEM-512, ML-KEM-768, and ML-KEM-1024. ML-KEM key generation, encapsulation and decaspulation functions are defined in {{?I-D.cfrg-schwabe-kyber}}. The main security property for KEMs standardized in the NIST Post-Quantum Cryptography Standardization Project is indistinguishability under adaptive chosen ciphertext attacks (IND-CCA2) (Section 10.2 of {{?I-D.ietf-pquip-pqc-engineers}}). The public/private key sizes, ciphertext key size, and PQ security levels of ML-KEM are detailed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
 ## PQ-KEM Encryption
 
@@ -205,6 +212,12 @@ An HPKE ciphersuite, is composed of the following choices:
 
 All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE256, and SHAKE512. This internal usage influences the selection of the Key Derivation Function (KDF) within this document.
 
+ML-KEM-512 SHOULD be used with a KDF capable of outputting a key with at least 128 bits of security and with a key wrapping algorithm with a key length of at least 128 bits.
+
+ML-KEM-768 SHOULD be used with a KDF capable of outputting a key with at least 192 bits of security and with a key wrapping algorithm with a key length of at least 192 bits.
+
+ML-KEM-1024 SHOULD be used with a KDF capable of outputting a key with at least 256 bits of security and with a key wrapping algorithm with a key length of at least 256 bits.
+
 For readability the algorithm ciphersuites labels are built according to the following scheme: 
 
 ~~~
@@ -236,7 +249,7 @@ The following table maps terms between JOSE and COSE for PQ-KEM ciphersuites.
         +==============+===================+====================+================================+
         | Name                          | Value  | Description                     | Recommended |
         +===================+===========+========+======================---========+=============+
-        | PQ-MLKEM512-SHA3-256-AES128   | TBD1   | ML-KEM-512 + SHA3-256 + AES256  | No          |
+        | PQ-MLKEM512-SHA3-256-AES128   | TBD1   | ML-KEM-512 + SHA3-256 + AES128  | No          |
         +-------------------------------+--------+---------------------------------+-------------+        
         | PQ-MLKEM768-SHA3-384-AES256   | TBD2   | ML-KEM-768 + SHA3-384 + AES256  | No          |
         +-------------------------------+--------+---------------------------------+-------------+
