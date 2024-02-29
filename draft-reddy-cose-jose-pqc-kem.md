@@ -212,11 +212,11 @@ An HPKE ciphersuite, is composed of the following choices:
 
 All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE256, and SHAKE512. This internal usage influences the selection of the Key Derivation Function (KDF) within this document.
 
-ML-KEM-512 SHOULD be used with a KDF capable of outputting a key with at least 128 bits of security and with a key wrapping algorithm with a key length of at least 128 bits.
+ML-KEM-512 MUST be used with a KDF capable of outputting a key with at least 128 bits of security and with a key wrapping algorithm with a key length of at least 128 bits.
 
-ML-KEM-768 SHOULD be used with a KDF capable of outputting a key with at least 192 bits of security and with a key wrapping algorithm with a key length of at least 192 bits.
+ML-KEM-768 MUST be used with a KDF capable of outputting a key with at least 192 bits of security and with a key wrapping algorithm with a key length of at least 192 bits.
 
-ML-KEM-1024 SHOULD be used with a KDF capable of outputting a key with at least 256 bits of security and with a key wrapping algorithm with a key length of at least 256 bits.
+ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 256 bits of security and with a key wrapping algorithm with a key length of at least 256 bits.
 
 For readability the algorithm ciphersuites labels are built according to the following scheme: 
 
