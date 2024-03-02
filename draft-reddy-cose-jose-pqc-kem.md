@@ -153,6 +153,9 @@ The message encryption process is as follows.
 
           SS = KDF(SS', SSLen)
 
+    TBD: Discuss use of JOSE/COSE context specific data.
+
+
 In Direct Key Agreement mode, the output of the KDF MUST be a key of the same length as that used by encryption algorithm. In Key Agreement with Key Wrapping mode, the output of the KDF MUST be a key of the length needed for the specified key wrap algorithm. 
 
 When Direct Key Agreement is employed, SS is the CEK. When Key Agreement with Key Wrapping is employed, SS is used to wrap the CEK.
