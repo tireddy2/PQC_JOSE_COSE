@@ -1,9 +1,9 @@
 ---
-title: "Use of Post-quantum KEM in JOSE and COSE"
-abbrev: "Use of Post-quantum KEM in JOSE and COSE"
+title: "Post-Quantum Key Encapsulation Mechanisms (PQ KEMs) for JOSE and COSE"
+abbrev: "PQ KEM for JOSE and COSE"
 category: std
 
-docname: draft-ra-cose-hybrid-encrypt
+docname: draft-reddy-cose-jose-pqc-kem
 submissiontype: IETF
 number:
 date:
@@ -17,15 +17,12 @@ keyword:
  - JOSE
  - Hybrid
 
- 
-
 venue:
   group: "cose" 
   type: "Working Group"
   mail: "cose@ietf.org" 
   arch: "https://mailarchive.ietf.org/arch/browse/cose/" 
   
-
 stand_alone: yes
 pi: [toc, sortrefs, symrefs, strict, comments, docmapping]
 
@@ -43,7 +40,12 @@ author:
     city: Munich
     country: Germany
     email: "aritra.banerjee@nokia.com"
-    
+ -
+    fullname: Hannes Tschofenig
+    organization:
+    city:
+    country: Germany
+    email: "hannes.tschofenig@gmx.net"
  
 normative:
   RFC2119:
@@ -77,7 +79,7 @@ informative:
      
 --- abstract
 
-This document describes the conventions for using a Post-quantum Key Encapsulation Mechanism algorithm (KEM) within JOSE and COSE. 
+This document describes the conventions for using Post-Quantum Key Encapsulation Mechanisms (PQ-KEMs) within JOSE and COSE. 
 
 --- middle
 
@@ -85,20 +87,26 @@ This document describes the conventions for using a Post-quantum Key Encapsulati
 
 Quantum computing is no longer perceived as a conjecture of computational sciences and theoretical physics.  Considerable research efforts and enormous corporate and government funding for the development of practical quantum computing systems are being invested currently. As such, as quantum technology advances, there is the potential for future quantum computers to have a significant impact on current cryptographic systems. 
 
-Extensive research has developed Post-quantum key encapsulation mechanisms (PQ-KEM) in order to provide secure key establishment against an adversary with access to a quantum computer.
+Researchers have developed Post-Quantum Key Encapsulation Mechanisms (PQ-KEMs) to provide secure key establishment resistant against an adversary with access to a quantum computer.
 
-As the National Institute of Standards and Technology (NIST) is still in the process of selecting the new post-quantum cryptographic algorithms that are secure against both quantum and classical computers, the purpose of this document is to propose a Post-quantum KEM solution to protect the confidentiality of content encrypted using JOSE and COSE against the quantum threat.
+As the National Institute of Standards and Technology (NIST) is still in the process of selecting the new post-quantum cryptographic algorithms that are secure against both quantum and classical computers, the purpose of this document is to propose a PQ-KEMs to protect the confidentiality of content encrypted using JOSE and COSE against the quantum threat.
 
-Although this mechanism could thus be used with any post-quantum KEM, this docuemnt specifies the case where the
-PQ-KEM algorithm is ML-KEM. The Module-Lattice-based Key-Encapsulation Mechanism (ML-KEM) Algorithm is a one-pass (store-and-forward) cryptographic mechanism for an originator to securely send keying material to a recipient
-using the recipient's ML-KEM public key. Three parameters sets for the ML-KEM Algorithm are specified by NIST in {{FIPS203-ipd}}. In order of increasing security strength (and decreasing performance), these parameter sets
+Although this mechanism could thus be used with any PQ-KEM, this document focuses on Module-Lattice-based Key Encapsulation Mechanisms (ML-KEMs). ML-KEM is a one-pass (store-and-forward) cryptographic mechanism for an originator to securely send keying material to a recipient
+using the recipient's ML-KEM public key. Three parameters sets for ML-KEMs are specified by {{FIPS203-ipd}}. In order of increasing security strength (and decreasing performance), these parameter sets
 are ML-KEM-512, ML-KEM-768, and ML-KEM-1024.
 
 # Conventions and Definitions
 
 {::boilerplate bcp14-tagged}
 
-This document makes use of the terms defined in {{?I-D.ietf-pquip-pqt-hybrid-terminology}}. For the purposes of this document, it is helpful to be able to divide cryptographic algorithms into two classes:
+This document makes use of the terms defined in {{?I-D.ietf-pquip-pqt-hybrid-terminology}}. The following terms are repeately used in this specification:
+
+- KEM: Key Encapsulation Mechanism
+- PQ-KEM: Post-Quantum Key Encapsulation Mechanism
+- CEK: Content Encryption Key
+- ML-KEM: Module-Lattice-based Key Encapsulation Mechanism
+
+For the purposes of this document, it is helpful to be able to divide cryptographic algorithms into two classes:
 
 "Traditional Algorithm":  An asymmetric cryptographic algorithm based on integer factorisation, finite field discrete logarithms or elliptic curve discrete logarithms. In the context of JOSE, examples of traditional key exchange algorithms include Elliptic Curve Diffie-Hellman Ephemeral Static {{?RFC6090}} {{?RFC8037}}. In the context of COSE, examples of traditional key exchange algorithms include Ephemeral-Static (ES) DH and Static-Static (SS) DH {{?RFC9052}}. 
 
@@ -106,7 +114,7 @@ This document makes use of the terms defined in {{?I-D.ietf-pquip-pqt-hybrid-ter
 
 ## Key Encapsulation Mechanisms
 
-For the purposes of this document, we consider a Key Encapsulation Mechanism (KEM) to be any asymmetric cryptographic scheme comprised of algorithms satisfying the following interfaces [PQCAPI].  
+For the purposes of this document, we consider a Key Encapsulation Mechanism (KEM) to be any asymmetric cryptographic scheme comprised of algorithms satisfying the following interfaces {{PQCAPI}}.  
 
 * def kemKeyGen() -> (pk, sk)
 * def kemEncaps(pk) -> (ct, ss)
@@ -116,45 +124,53 @@ where pk is public key, sk is secret key, ct is the ciphertext representing an e
 
 KEMs are typically used in cases where two parties, hereby refereed to as the "encapsulater" and the "decapsulater", wish to establish a shared secret via public key cryptography, where the decapsulater has an asymmetric key pair and has previously shared the public key with the encapsulater.
   
-# Design Rationales
+# Design Rationales {#rational}
 
-The JSON Web Algorithms (JWA) {{?RFC7518}} in Section 4.6 defines two ways of using the key agreement result. When Direct Key Agreement is employed, the shared secret established through the Traditional Algorithm will be the content encryption key (CEK). When Key Agreement with Key Wrapping is employed, the shared secret established through the Traditional Algorithm will wrap the CEK. If multiple recipients are needed, then the version with key wrap is used. Similarly, COSE in Sections 8.5.4 and 8.5.5 {{?RFC9052}} defines the Direct Key Agreement and Key Agreement with Key Wrap classes. This document proposes the use of Post-Quantum Algorithms in these two modes.
+Section 4.6 of the JSON Web Algorithms (JWA) specification, see {{?RFC7518}}, defines two ways of using a key agreement:
 
-It is essential to note that in the PQ-KEM, one needs to apply Fujisaki-Okamoto {{FO}} transform or its variant {{HHK}} on the PQC KEM part to ensure that the overall scheme is IND-CCA2 secure as mentioned in {{?I-D.ietf-tls-hybrid-design}}. The FO transform is performed using the KDF such that the PQC KEM shared secret achieved is IND-CCA2 secure. In this case, one can re-use the PQC KEM public keys but depending on some upper bound that must adhered to.
+- When Direct Key Agreement is employed, the shared secret established through the Traditional Algorithm will be the content encryption key (CEK).
+- When Key Agreement with Key Wrapping is employed, the shared secret established through the Traditional Algorithm will wrap the CEK.
 
-Note that during the transition from traditional to post-quantum algorithms, there may be a desire or a requirement for protocols that incorporate both types of algorithms until the post-quantum algorithms are fully trusted. The terminology for Post-Quantum and Traditional Hybrid Schemes is defined in {{?I-D.ietf-pquip-pqt-hybrid-terminology}}. HPKE with COSE and JOSE is presented in {{?I-D.ietf-rha-jose-hpke-encrypt}} and {{?I-D.ietf-cose-hpke}}. These specifications can be extended to support hybrid post-quantum Key Encapsulation Mechanisms (KEMs) as defined in {{?I-D.ietf-westerbaan-cfrg-hpke-xyber768d00}}.
+For efficient use with multiple recipient the key wrap approach is used since the content can be encrypted once with the CEK but each CEK is encrypted per recipient. Similarly, Section 8.5.4 and Section 8.5.5 of COSE {{?RFC9052}} define the Direct Key Agreement and Key Agreement with Key Wrap, respectively. This document proposes the use of PQ-KEMs for these two modes.
+
+It is essential to note that in the PQ-KEM, one needs to apply Fujisaki-Okamoto {{FO}} transform or its variant {{HHK}} on the PQC KEM part to ensure that the overall scheme is IND-CCA2 secure, as mentioned in {{?I-D.ietf-tls-hybrid-design}}. The FO transform is performed using the KDF such that the PQC KEM shared secret achieved is IND-CCA2 secure. As a consequence, one can re-use PQC KEM public keys but there is an upper bound that must be adhered to.
+
+Note that during the transition from traditional to post-quantum algorithms, there may be a desire or a requirement for protocols that incorporate both types of algorithms until the post-quantum algorithms are fully trusted. HPKE is an KEM that can be extended to support hybrid post-quantum KEMs and the specifications for the use of HPKE with JOSE and COSE are described in {{?I-D.ietf-rha-jose-hpke-encrypt}} and {{?I-D.ietf-cose-hpke}}, respectively. 
 
 # KEM PQC Algorithms
 
 The National Institute of Standards and Technology (NIST) started a process to solicit, evaluate, and standardize one or more quantum-resistant public-key cryptographic algorithms, as seen [here](https://csrc.nist.gov/projects/post-quantum-cryptography). Said process has reached its [first announcement](https://csrc.nist.gov/publications/detail/nistir/8413/final) in July 5, 2022, which stated which candidates to be standardized for KEM:
 
 * Key Encapsulation Mechanisms (KEMs): [CRYSTALS-Kyber](https://pq-crystals.org/kyber/): ML-KEM, previously known 
- as Kyber is a module learning with errors (MLWE)-based key encapsulation mechanism. These were mapped by NIST to the three security levels defined in the NIST PQC Project, Level 1, 3, and 5. These levels correspond to the hardness of breaking AES-128, AES-192 and AES-256 respectively.
+ as Kyber, is a module learning with errors (MLWE)-based KEM. Three security levels have been defined in the NIST PQC Project, namely Level 1, 3, and 5. These levels correspond to the hardness of breaking AES-128, AES-192 and AES-256, respectively.
 
 NIST announced as well that they will be [opening a fourth round](https://csrc.nist.gov/csrc/media/Projects/post-quantum-cryptography/documents/round-4/guidelines-for-submitting-tweaks-fourth-round.pdf) to standardize an alternative KEM, and a [call](https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/call-for-proposals-dig-sig-sept-2022.pdf) for new candidates for a post-quantum signature algorithm.
 
 ## ML-KEM
 
-ML-KEM offers several parameter sets with varying levels of security and performance trade-offs. This document specifies the use of the ML-KEM algorithm at three security levels: ML-KEM-512, ML-KEM-768, and ML-KEM-1024. ML-KEM key generation, encapsulation and decaspulation functions are defined in {{?I-D.cfrg-schwabe-kyber}}. The main security property for KEMs standardized in the NIST Post-Quantum Cryptography Standardization Project is indistinguishability under adaptive chosen ciphertext attacks (IND-CCA2) (Section 10.2 of {{?I-D.ietf-pquip-pqc-engineers}}). The public/private key sizes, ciphertext key size, and PQ security levels of ML-KEM are detailed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+ML-KEM offers several parameter sets with varying levels of security and performance trade-offs. This document specifies the use of the ML-KEM algorithm at three security levels: ML-KEM-512, ML-KEM-768, and ML-KEM-1024. ML-KEM key generation, encapsulation and decaspulation functions are defined in {{?I-D.cfrg-schwabe-kyber}}. The main security property for KEMs standardized in the NIST Post-Quantum Cryptography Standardization Project is indistinguishability under adaptive chosen ciphertext attacks (IND-CCA2) (see Section 10.2 of {{?I-D.ietf-pquip-pqc-engineers}}). The public/private key sizes, ciphertext key size, and PQ security levels of ML-KEM are detailed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
 ## PQ-KEM Encapsulation {#encrypt}
 
-The encapsulation process is as follows. 
+The encapsulation process is as follows:
 
-1.  Generate a inital shared secret SS' and the associated ciphertext CT
-    using the KEM encaspulation function and the recipient's public
-    key recipPubKey:
+1.  Generate an inital shared secret SS' and the associated ciphertext CT
+    using the KEM encapsulation function and the recipient's public
+    key recipPubKey.
 
+~~~
           (SS', CT) = kemEncaps(recipPubKey)
+~~~
 
 2.  Derive a final shared secret SS of length SSLen bytes from
     the initial shared secret SS' using the underlying key derivation
     function:
 
+~~~
           SS = KDF(SS', SSLen)
+~~~
 
-    TBD: Discuss use of JOSE/COSE context specific data.
-
+TBD: Discuss use of JOSE/COSE context specific data.
 
 In Direct Key Agreement mode, the output of the KDF MUST be a key of the same length as that used by encryption algorithm. In Key Agreement with Key Wrapping mode, the output of the KDF MUST be a key of the length needed for the specified key wrap algorithm. 
 
@@ -162,13 +178,15 @@ When Direct Key Agreement is employed, SS is the CEK. When Key Agreement with Ke
 
 ## PQ-KEM Decapsulation {#decrypt}
 
-The decapsulation process is as follows.
+The decapsulation process is as follows:
 
-1.  Decapsulate the ciphertext CT using the KEM decaspulation
+1.  Decapsulate the ciphertext CT using the KEM decapsulation
     function and the recipient's private key to retrieve the initial shared
     secret SS':
 
+~~~
           SS' = kemDecaps(recipPrivKey, CT)
+~~~
 
     If the decapsulation operation outputs an error, output "decryption error", and stop.
 
@@ -176,42 +194,44 @@ The decapsulation process is as follows.
     the inital secret SS' using the underlying key derivation
     function:
 
+~~~
           SS = KDF(SS', SSLen)
+~~~
 
 # Post-quantum KEM in JOSE
 
-JSON Web Algorithms (JWA) Section 4.6 of {{RFC7518}} defines two ways to use public key cryptography with JWE:
+As explained in {{rational}} JWA defines two ways to use public key cryptography with JWE:
 
 * Direct Key Agreement
 * Key Agreement with Key Wrapping
 
-This specification describes these two modes of use for PQ-KEM in JWE. Unless otherwise stated, no changes to the processes described in {{RFC7516}} have been made.
+This specification describes these two modes of use for PQ-KEM in JWE. Unless otherwise stated, no changes to the procedures described in {{RFC7516}} have been made.
 
-If the 'alg' header parameter is set to the 'PQ-Direct' value (as defined in {{IANA}}), PQ KEM is used in Direct Key Agreement mode; otherwise, it is in Key Agreement with Key Wrapping.
+If the 'alg' header parameter is set to the 'PQ-Direct' value, a PQ-KEM is used in Direct Key Agreement mode; otherwise, it the PQ-KEM is used in Key Agreement with Key Wrapping mode. See {{IANA}} for the IANA registration of this new algorithm value.
 
-## Direct key agreement 
+## Direct Key Agreement 
 
-*  The "alg" Header Parameter MUST be "PQ-Direct", "enc" MUST be an PQ-KEM algorithm from JSON Web Signature and Encryption Algorithms in {{JOSE-IANA}} and they MUST occur only within the JWE Protected Header.
+*  The "alg" header parameter MUST be set to "PQ-Direct". The "enc" (Encryption Algorithm) header parameter MUST be a PQ-KEM algorithm chosen from the JSON Web Signature and Encryption Algorithms registry defined in {{JOSE-IANA}}. Both header parameters, "alg" and "enc", MUST be placed in the JWE Protected Header.
 
 *  The CEK will be generated using the process explained in {{encrypt}}. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. 
 
-*  The JWE Ciphertext must include the concatenation of the output ('ct') from the PQ KEM Encaps algorithm, encoded using base64url, along with the base64url-encoded ciphertext output obtained by encrypting the plaintext using the Content Encryption Key (CEK). This encryption process corresponds to step 15 of the {{RFC7518}}. 
+*  The JWE Ciphertext MUST include the concatenation of the output ('ct') from the PQ-KEM algorithm, encoded using base64url, along with the base64url-encoded ciphertext output obtained by encrypting the plaintext using the CEK. This encryption process corresponds to step 15 of {{RFC7518}}. 
 
-* The recipient will seperate the 'ct' (output from the PQ KEM Encaps algorithm) from JWE Ciphertext to decode it and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEM are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+* The recipient MUST separate the 'ct' (output from the PQ-KEM algorithm) from the JWE Ciphertext to decode it and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEMs are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
 *  The JWE Encrypted Key MUST be absent.
 
 ## Key Agreement with Key Wrapping
 
-* The derived key generated using the process explained in {{encrypt}} is used to encrypt the Content Encryption Key (CEK). 
+* The derived key is generated using the process explained in {{encrypt}} and used to encrypt the CEK. 
 
-*  The JWE Encrypted Key must include the concatenation of the output ('ct') from the PQ KEM Encaps algorithm, encoded using base64url, along with the base64url-encoded encrypted CEK. 
+*  The JWE Encrypted Key MUST include the concatenation of the output ('ct') from the PQ-KEM algorithm, encoded using base64url, along with the base64url-encoded encrypted CEK. 
 
-* The 'enc' (Encryption Algorithm) Header Parameter MUST specify a content encryption algorithm from the JSON Web Signature and Encryption Algorithms defined in {{JOSE-IANA}}.
+* The 'enc' (Encryption Algorithm) header parameter MUST specify a content encryption algorithm from the JSON Web Signature and Encryption Algorithms registry, as defined in {{JOSE-IANA}}.
 
-* The recipient will separate the 'ct' (output from the PQ KEM Encaps algorithm) from the JWE Encrypted Key to decode it. Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the Content Encryption Key (CEK).
+* The recipient MUST separate the 'ct' (output from the PQ KEM Encaps algorithm) from the JWE Encrypted Key to decode it. Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the CEK.
 
-# Post-quantum KEM in COSE
+# Post-Quantum KEM in COSE
 
 This specification supports two uses of PQ-KEM in COSE, namely
 
@@ -238,7 +258,7 @@ indicates the use of PQ-KEM.
 
 Although the use of the 'kid' parameter in COSE_Encrypt0 is
 discouraged by {{?RFC9052}}, this documents RECOMMENDS the use of the 'kid' parameter
-(or other parameters) to explicitly identify the static recipient public key
+(or other parameters) to explicitly identify the recipient public key
 used by the sender. If the COSE_Encrypt0 contains the 'kid' then the recipient may
 use it to select the appropriate private key.
 
@@ -287,19 +307,20 @@ For readability the algorithm ciphersuites labels are built according to the fol
 PQ-<PQ-KEM>-<KDF>-<AEAD>
 ~~~
 
-* In Direct key agreement, the parameter "enc" MUST be specified, and its value MUST be one of the values specified in the table below:
-  
-              +===============================+===================================+
-              | alg                           | Description                       |
-              +===============================+===================================+
-              | PQ-MLKEM512-SHA3-256-AES128   | ML-KEM-512 + SHA3-256 + AES128    |
-              +===============================+===================================+              
-              | PQ-MLKEM768-SHA3-384-AES256   | ML-KEM-768 + SHA3-384 + AES256    |
-              +===============================+===================================+
-              | PQ-MLKEM1024-SHA3-512-AES256  | ML-KEM-1024 + SHA3-512 + AES256   |
-              +===============================+===================================+
+* In Direct key agreement, the parameter "enc" MUST be specified, and its value MUST be one of the values specified in {{direct-table}}. (Note that future specifications MAY extend the list of algorithms.)
 
-                                 Table 1
+~~~
+ +===============================+===================================+
+ | alg                           | Description                       |
+ +===============================+===================================+
+ | PQ-MLKEM512-SHA3-256-AES128   | ML-KEM-512 + SHA3-256 + AES128    |
+ +===============================+===================================+
+ | PQ-MLKEM768-SHA3-384-AES256   | ML-KEM-768 + SHA3-384 + AES256    |
+ +===============================+===================================+
+ | PQ-MLKEM1024-SHA3-512-AES256  | ML-KEM-1024 + SHA3-512 + AES256   |
+ +===============================+===================================+
+~~~
+{: #direct-table title="Direct Key Agreement: Algorithms."}
 
 * In Key Agreement with Key Wrapping, the parameter "alg" MUST be specified, and its value MUST be one of the values specified in the table above.
 
@@ -307,19 +328,20 @@ The specification allows a small number of "known good" PQ-KEM ciphersuites inst
 
 # COSE Ciphersuite Registration {#COSE-PQ-KEM}
 
-The following table maps terms between JOSE and COSE for PQ-KEM ciphersuites.
+{{mapping-table}} maps the JOSE algorithm names to the COSE algorithm values (for the PQ-KEM ciphersuites defined by this document).
 
-        +==============+===================+====================+================================+
-        | Name                          | Value  | Description                     | Recommended |
-        +===================+===========+========+======================---========+=============+
-        | PQ-MLKEM512-SHA3-256-AES128   | TBD1   | ML-KEM-512 + SHA3-256 + AES128  | No          |
-        +-------------------------------+--------+---------------------------------+-------------+        
-        | PQ-MLKEM768-SHA3-384-AES256   | TBD2   | ML-KEM-768 + SHA3-384 + AES256  | No          |
-        +-------------------------------+--------+---------------------------------+-------------+
-        | PQ-MLKEM768-SHA3-512-AES256   | TBD3   | ML-KEM-1024 + SHA3-512 + AES256 | No          |
-        +-------------------------------+--------+---------------------------------+-------------+   
-
-                                       Table 2
+~~~
++===============================+=========+=================================+=============+
+| JOSE                          | COSE ID | Description                     | Recommended |
++===============================+=========+======================---========+=============+
+| PQ-MLKEM512-SHA3-256-AES128   | TBD1    | ML-KEM-512 + SHA3-256 + AES128  | No          |
++-------------------------------+---------+---------------------------------+-------------+
+| PQ-MLKEM768-SHA3-384-AES256   | TBD2    | ML-KEM-768 + SHA3-384 + AES256  | No          |
++-------------------------------+---------+---------------------------------+-------------+
+| PQ-MLKEM768-SHA3-512-AES256   | TBD3    | ML-KEM-1024 + SHA3-512 + AES256 | No          |
++-------------------------------+---------+---------------------------------+-------------+
+~~~
+{: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
 
 # Security Considerations
 
@@ -388,4 +410,4 @@ The following has to be added to the "COSE Algorithms" registry:
 # Acknowledgments
 {: numbered="false"}
 
-TODO.
+Add your name here.
