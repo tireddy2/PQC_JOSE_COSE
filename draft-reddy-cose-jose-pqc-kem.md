@@ -37,7 +37,7 @@ author:
     region: Karnataka
     country: India
     email: "kondtir@gmail.com"
--
+ -
     fullname: Aritra Banerjee
     organization: Nokia
     city: Munich
@@ -137,9 +137,9 @@ NIST announced as well that they will be [opening a fourth round](https://csrc.n
 
 ML-KEM offers several parameter sets with varying levels of security and performance trade-offs. This document specifies the use of the ML-KEM algorithm at three security levels: ML-KEM-512, ML-KEM-768, and ML-KEM-1024. ML-KEM key generation, encapsulation and decaspulation functions are defined in {{?I-D.cfrg-schwabe-kyber}}. The main security property for KEMs standardized in the NIST Post-Quantum Cryptography Standardization Project is indistinguishability under adaptive chosen ciphertext attacks (IND-CCA2) (Section 10.2 of {{?I-D.ietf-pquip-pqc-engineers}}). The public/private key sizes, ciphertext key size, and PQ security levels of ML-KEM are detailed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
-## PQ-KEM Encryption
+## PQ-KEM Encapsulation {#encrypt}
 
-The message encryption process is as follows. 
+The encapsulation process is as follows. 
 
 1.  Generate a inital shared secret SS' and the associated ciphertext CT
     using the KEM encaspulation function and the recipient's public
@@ -160,9 +160,9 @@ In Direct Key Agreement mode, the output of the KDF MUST be a key of the same le
 
 When Direct Key Agreement is employed, SS is the CEK. When Key Agreement with Key Wrapping is employed, SS is used to wrap the CEK.
 
-## PQ-KEM Decryption {#decrypt}
+## PQ-KEM Decapsulation {#decrypt}
 
-The message decryption process is as follows.
+The decapsulation process is as follows.
 
 1.  Decapsulate the ciphertext CT using the KEM decaspulation
     function and the recipient's private key to retrieve the initial shared
@@ -193,21 +193,81 @@ If the 'alg' header parameter is set to the 'PQ-Direct' value (as defined in {{I
 
 *  The "alg" Header Parameter MUST be "PQ-Direct", "enc" MUST be an PQ-KEM algorithm from JSON Web Signature and Encryption Algorithms in {{JOSE-IANA}} and they MUST occur only within the JWE Protected Header.
 
+*  The CEK will be generated using the process explained in {{encrypt}}. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. 
+
 *  The JWE Ciphertext must include the concatenation of the output ('ct') from the PQ KEM Encaps algorithm, encoded using base64url, along with the base64url-encoded ciphertext output obtained by encrypting the plaintext using the Content Encryption Key (CEK). This encryption process corresponds to step 15 of the {{RFC7518}}. 
 
-* The recipient will seperate the 'ct' (output from the PQ KEM Encaps algorithm) from JWE Ciphertext to decode it and then derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEM are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+* The recipient will seperate the 'ct' (output from the PQ KEM Encaps algorithm) from JWE Ciphertext to decode it and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEM are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
 *  The JWE Encrypted Key MUST be absent.
 
 ## Key Agreement with Key Wrapping
 
-The CEK will be generated using the process explained in {{decrypt}}. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. The 'enc' (Encryption Algorithm) Header Parameter MUST specify a content encryption algorithm from the JSON Web Signature and Encryption Algorithms defined in {{JOSE-IANA}}.
+* The derived key generated using the process explained in {{encrypt}} is used to encrypt the Content Encryption Key (CEK). 
+
+*  The JWE Encrypted Key must include the concatenation of the output ('ct') from the PQ KEM Encaps algorithm, encoded using base64url, along with the base64url-encoded encrypted CEK. 
+
+* The 'enc' (Encryption Algorithm) Header Parameter MUST specify a content encryption algorithm from the JSON Web Signature and Encryption Algorithms defined in {{JOSE-IANA}}.
+
+* The recipient will separate the 'ct' (output from the PQ KEM Encaps algorithm) from the JWE Encrypted Key to decode it. Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the Content Encryption Key (CEK).
+
+# Post-quantum KEM in COSE
+
+This specification supports two uses of PQ-KEM in COSE, namely
+
+*  PQ-KEM in a single recipient setup.  This use case utilizes a one
+   layer COSE structure. 
+
+*  PQ-KEM in a multiple recipient setup.  This use case requires a two
+   layer COSE structure.  
+
+## Single Recipient / One Layer Structure
+
+With the one layer structure the information carried inside the 
+COSE_recipient structure is embedded inside the COSE_Encrypt0. 
+
+The CEK will be generated using the process explained in {{encrypt}}. 
+Subsequently, the plaintext will be encrypted using the CEK. The resulting 
+ciphertext is either included in the COSE_Encrypt0 or is detached. If a payload is
+transported separately then it is called "detached content". A nil CBOR
+object is placed in the location of the ciphertext. See Section 5
+of {{?RFC9052}} for a description of detached payloads.
+
+The sender MUST set the alg parameter in the protected header, which
+indicates the use of PQ-KEM.
+
+Although the use of the 'kid' parameter in COSE_Encrypt0 is
+discouraged by {{?RFC9052}}, this documents RECOMMENDS the use of the 'kid' parameter
+(or other parameters) to explicitly identify the static recipient public key
+used by the sender. If the COSE_Encrypt0 contains the 'kid' then the recipient may
+use it to select the appropriate private key.
+
+## Key Agreement with Key Wrapping
+
+With the two layer structure the PQ-KEM information is conveyed in the COSE_recipient 
+structure, i.e. one COSE_recipient structure per recipient.
+
+In this approach the following layers are involved: 
+
+- Layer 0 (corresponding to the COSE_Encrypt structure) contains the content (plaintext)
+encrypted with the CEK. This ciphertext may be detached, and if not detached, then
+it is included in the COSE_Encrypt structure.
+
+- Layer 1 (corresponding to a recipient structure) contains parameters needed for 
+PQ-KEM to generate a shared secret used to encrypt the CEK. This layer conveys the 
+concatenation of the output ('ct') from the PQ KEM Encaps algorithm and encrypted CEK 
+in the encCEK structure. The unprotected header MAY contain the kid parameter to 
+identify the static recipient public key the sender has been using with PQ-KEM.
+
+This two-layer structure is used to encrypt content that can also be shared with
+multiple parties at the expense of a single additional encryption operation.
+As stated above, the specification uses a CEK to encrypt the content at layer 0.
 
 # JOSE Ciphersuite Registration {#JOSE-PQ-KEM}
 
 This specification registers a number of PQ-KEM ciphersuites for use with JOSE. A ciphersuite is a group of algorithms, often sharing component algorithms such as hash functions, targeting a security level.
 
-An HPKE ciphersuite, is composed of the following choices:
+An PQ-KEM ciphersuite, is composed of the following choices:
 
 - PQ-KEM Algorithm
 - KDF Algorithm
