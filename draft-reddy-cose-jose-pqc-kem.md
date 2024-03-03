@@ -207,7 +207,7 @@ As explained in {{rational}} JWA defines two ways to use public key cryptography
 
 This specification describes these two modes of use for PQ-KEM in JWE. Unless otherwise stated, no changes to the procedures described in {{RFC7516}} have been made.
 
-If the 'alg' header parameter is set to the 'PQ-Direct' value, a PQ-KEM is used in Direct Key Agreement mode; otherwise, it the PQ-KEM is used in Key Agreement with Key Wrapping mode. See {{IANA}} for the IANA registration of this new algorithm value.
+If the 'alg' header parameter is set to the 'PQ-Direct' value, a PQ-KEM is used in Direct Key Agreement mode; otherwise, if the PQ-KEM is used in Key Agreement with Key Wrapping mode. See {{IANA}} for the IANA registration of this new algorithm value.
 
 ## Direct Key Agreement 
 
