@@ -264,7 +264,7 @@ discouraged by {{?RFC9052}}, this documents RECOMMENDS the use of the 'kid' para
 used by the sender. If the COSE_Encrypt0 contains the 'kid' then the recipient may
 use it to select the appropriate private key.
 
-## Key Agreement with Key Wrapping
+## Multiple Recipients / Two Layer Structure
 
 With the two layer structure the PQ-KEM information is conveyed in the COSE_recipient 
 structure, i.e. one COSE_recipient structure per recipient.
@@ -276,7 +276,7 @@ encrypted with the CEK. This ciphertext may be detached, and if not detached, th
 it is included in the COSE_Encrypt structure.
 
 - Layer 1 (corresponding to a recipient structure) contains parameters needed for 
-PQ-KEM to generate a shared secret used to encrypt the CEK. This layer conveys the 
+PQ-KEM to generate a shared secret used to encrypt the CEK. This layer conveys  
 the output ('ct') from the PQ KEM Encaps algorithm in the 'encapsulated_key' header 
 parameter and encrypted CEK in the encCEK structure. The unprotected header MAY 
 contain the kid parameter to identify the static recipient public key the sender 
@@ -290,7 +290,7 @@ As stated above, the specification uses a CEK to encrypt the content at layer 0.
 
 This specification registers a number of PQ-KEM algorithms for use with JOSE. 
 
-All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE128, and SHAKE256. This internal usage influences the selection of the SHAKE256 Key Derivation Function (KDF) as described in this document
+All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE128, and SHAKE256. This internal usage influences the selection of the SHAKE128 or SHAKE256 Key Derivation Function (KDF) as described in this document.
 
 ML-KEM-512 MUST be used with a KDF capable of outputting a key with at least 128 bits of security and with a key wrapping algorithm with a key length of at least 128 bits.
 
@@ -310,7 +310,7 @@ For readability the algorithm ciphersuites labels are built according to the fol
  +===============================+===================================+
  | alg                           | Description                       |
  +===============================+===================================+
- | MLKEM512-SHAKE256             | ML-KEM-512 + SHAKE256             |
+ | MLKEM512-SHAKE128             | ML-KEM-512 + SHAKE128             |
  +===============================+===================================+
  | MLKEM768-SHAKE256             | ML-KEM-768 + SHAKE256             |
  +===============================+===================================+
@@ -325,7 +325,7 @@ For readability the algorithm ciphersuites labels are built according to the fol
  +=================================+===================================+
  | alg                             | Description                       |
  +=================================+===================================+
- | MLKEM512-SHAKE256-AES128KW      | ML-KEM-512 + SHAKE256 + AES128KW  |
+ | MLKEM512-SHAKE128-AES128KW      | ML-KEM-512 + SHAKE128 + AES128KW  |
  +=================================+===================================+
  | MLKEM768-SHAKE256-AES256KW      | ML-KEM-768 + SHAKE256 + AES256KW  |
  +=================================+===================================+
@@ -342,13 +342,13 @@ For readability the algorithm ciphersuites labels are built according to the fol
 +===============================+=========+===================================+=============+
 | JOSE                          | COSE ID | Description                       | Recommended |
 +===============================+=========+===================================+=============+
-| MLKEM512-SHAKE256             | TBD1    | ML-KEM-512 + SHAKE256             | No          |
+| MLKEM512-SHAKE128             | TBD1    | ML-KEM-512 + SHAKE128             | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
 | MLKEM768-SHAKE256             | TBD2    | ML-KEM-768 + SHAKE256             | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
 | MLKEM1024-SHAKE256            | TBD3    | ML-KEM-1024 + SHAKE256            | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM512-SHAKE256+AES128KW    | TBD4    | ML-KEM-512 + SHAKE256 + AES128KW  | No          |
+| MLKEM512-SHAKE128+AES128KW    | TBD4    | ML-KEM-512 + SHAKE128 + AES128KW  | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
 | MLKEM768-SHAKE256+AES256KW    | TBD5    | ML-KEM-768 + SHAKE256 + AES256KW  | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
@@ -376,8 +376,8 @@ The following has to be added to the "JSON Web Key Parameters" registry:
 
 The following entries are added to the "JSON Web Signature and Encryption Algorithms" registry:
 
-- Algorithm Name: MLKEM512-SHAKE256
-- Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and the SHAKE256 KDF.
+- Algorithm Name: MLKEM512-SHAKE128
+- Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and the SHAKE128 KDF.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
 - Change Controller: IESG
@@ -400,8 +400,8 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM512-SHAKE256+A128KW
-- Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM, the SHAKE256 KDF and CEK wrapped with "A128KW".
+- Algorithm Name: MLKEM512-SHAKE128+A128KW
+- Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM, the SHAKE128 KDF and CEK wrapped with "A128KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
 - Change Controller: IESG
@@ -428,9 +428,9 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 
 The following has to be added to the "COSE Algorithms" registry:
 
-- Name: MLKEM512-SHA256
+- Name: MLKEM512-SHAKE128
 - Value: TBD1
-- Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and the SHAKE256 KDF.
+- Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and the SHAKE128 KDF.
 - Reference: This document (TBD)
 - Recommended: No
 
@@ -446,9 +446,9 @@ The following has to be added to the "COSE Algorithms" registry:
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM512-SHA256+A128KW
+- Name: MLKEM512-SHAKE128+A128KW
 - Value: TBD4
-- Description: PQ-KEM that uses ML-KEM-512 PQ-KEM, the SHAKE256 KDF and CEK wrapped with "A128KW".
+- Description: PQ-KEM that uses ML-KEM-512 PQ-KEM, the SHAKE128 KDF and CEK wrapped with "A128KW".
 - Reference: This document (TBD)
 - Recommended: No
 
