@@ -370,7 +370,7 @@ The following has to be added to the "JSON Web Key Parameters" registry:
 - Parameter Name: "kem-ct"
 - Parameter Description: PQC KEM ciphertext
 - Parameter Information Class: Public 
-- Change Controller: IESG
+- Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -380,7 +380,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and the SHAKE128 KDF.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IESG
+- Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -388,7 +388,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-768 PQ-KEM and the SHAKE256 KDF.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IESG
+- Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -396,7 +396,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM and the SHAKE256 KDF.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IESG
+- Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -404,7 +404,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM, the SHAKE128 KDF and CEK wrapped with "A128KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IESG
+- Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -412,7 +412,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-768, the SHAKE256 KDF and CEK wrapped with "A256KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IESG
+- Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -420,7 +420,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-1024, the SHAKE256 KDF and CEK wrapped with "A256KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IESG
+- Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -431,36 +431,48 @@ The following has to be added to the "COSE Algorithms" registry:
 - Name: MLKEM512-SHAKE128
 - Value: TBD1
 - Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and the SHAKE128 KDF.
+- Capabilities: [kty]
+- Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
 - Name: MLKEM768-SHAKE256
 - Value: TBD2
 - Description: PQ-KEM that uses ML-KEM-768 PQ-KEM and the SHAKE256 KDF.
+- Capabilities: [kty]
+- Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
 - Name: MLKEM1024-SHAKE256
 - Value: TBD3
 - Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM and the SHAKE256 KDF.
+- Capabilities: [kty]
+- Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
 - Name: MLKEM512-SHAKE128+A128KW
 - Value: TBD4
 - Description: PQ-KEM that uses ML-KEM-512 PQ-KEM, the SHAKE128 KDF and CEK wrapped with "A128KW".
+- Capabilities: [kty]
+- Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
 - Name: MLKEM768-SHAKE256+A256KW
 - Value: TBD5
 - Description: PQ-KEM that uses ML-KEM-768, the SHAKE256 KDF and CEK wrapped with "A256KW".
+- Capabilities: [kty]
+- Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
 - Name: MLKEM1024-SHAKE256+A256KW
 - Value: TBD6
 - Description: PQ-KEM that uses ML-KEM-1024, the SHAKE256 KDF and CEK wrapped with "A256KW".
+- Capabilities: [kty]
+- Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
