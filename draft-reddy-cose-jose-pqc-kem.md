@@ -206,7 +206,7 @@ KMAC#(K, X, L, S) takes the following parameters:
 
 > K: the input key-derivation key.  In this document this is the shared secret outputted from the kemEncaps() or kemDecaps() functions.  
 
-> X: the context. In case of JOSE, it will carry the JOSE context specific data defined in Section 4.6.2 of {{RFC7518}}. In case of COSE, the fixedInfo parameter will carry the COSE context structure defined in Section 5.2 of {{RFC9053}}.
+> X: the context. In case of JOSE, it will carry the JOSE context specific data defined in Section 4.6.2 of {{RFC7518}}. In case of COSE, the fixedInfo parameter will carry the COSE context structure defined in Section 5.2 of {{!RFC9053}}.
 
 > L: the output length, in bits.  
 
@@ -291,7 +291,7 @@ it is included in the COSE_Encrypt structure.
 
 - Layer 1 (corresponding to a recipient structure) contains parameters needed for 
 PQ-KEM to generate a shared secret used to encrypt the CEK. This layer conveys  
-the output ('ct') from the PQ KEM Encaps algorithm in the 'encapsulated_key' header 
+the output ('ct') from the PQ KEM Encaps algorithm in the 'ek' header 
 parameter and encrypted CEK in the encCEK structure. The unprotected header MAY 
 contain the kid parameter to identify the static recipient public key the sender 
 has been using with PQ-KEM.
@@ -324,11 +324,11 @@ For readability the algorithm ciphersuites labels are built according to the fol
  +===============================+===================================+
  | alg                           | Description                       |
  +===============================+===================================+
- | MLKEM512-KMAC128             | ML-KEM-512 + KMAC128               |
+ | MLKEM512-KMAC128              | ML-KEM-512 + KMAC128              |
  +===============================+===================================+
- | MLKEM768-KMAC256             | ML-KEM-768 + KMAC256               |
+ | MLKEM768-KMAC256              | ML-KEM-768 + KMAC256              |
  +===============================+===================================+
- | MLKEM1024-KMAC256            | ML-KEM-1024 + KMAC256              |
+ | MLKEM1024-KMAC256             | ML-KEM-1024 + KMAC256             |
  +===============================+===================================+
 ~~~
 {: #direct-table title="Direct Key Agreement: Algorithms."}
@@ -339,11 +339,11 @@ For readability the algorithm ciphersuites labels are built according to the fol
  +=================================+===================================+
  | alg                             | Description                       |
  +=================================+===================================+
- | MLKEM512-KMAC128-AES128KW      | ML-KEM-512 + KMAC128 + AES128KW    |
+ | MLKEM512-KMAC128-AES128KW       | ML-KEM-512 + KMAC128 + AES128KW   |
  +=================================+===================================+
- | MLKEM768-KMAC256-AES256KW      | ML-KEM-768 + KMAC256 + AES256KW    |
+ | MLKEM768-KMAC256-AES256KW       | ML-KEM-768 + KMAC256 + AES256KW   |
  +=================================+===================================+
- | MLKEM1024-KMAC256-AES256KW     | ML-KEM-1024 + KMAC256 + AES256KW   |
+ | MLKEM1024-KMAC256-AES256KW      | ML-KEM-1024 + KMAC256 + AES256KW  |
  +=================================+===================================+
 ~~~
 {: #keywrap-table title="Key Agreement with Key Wrapping: Algorithms."}
@@ -356,17 +356,17 @@ For readability the algorithm ciphersuites labels are built according to the fol
 +===============================+=========+===================================+=============+
 | JOSE                          | COSE ID | Description                       | Recommended |
 +===============================+=========+===================================+=============+
-| MLKEM512-KMAC128             | TBD1    | ML-KEM-512 + KMAC128             | No            |
+| MLKEM512-KMAC128              | TBD1    | ML-KEM-512 + KMAC128              | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM768-KMAC256             | TBD2    | ML-KEM-768 + KMAC256             | No            |
+| MLKEM768-KMAC256              | TBD2    | ML-KEM-768 + KMAC256              | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM1024-KMAC256            | TBD3    | ML-KEM-1024 + KMAC256            | No            |
+| MLKEM1024-KMAC256             | TBD3    | ML-KEM-1024 + KMAC256             | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM512-KMAC128+AES128KW    | TBD4    | ML-KEM-512 + KMAC128 + AES128KW  | No            |
+| MLKEM512-KMAC128+AES128KW     | TBD4    | ML-KEM-512 + KMAC128 + AES128KW   | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM768-KMAC256+AES256KW    | TBD5    | ML-KEM-768 + KMAC256 + AES256KW  | No            |
+| MLKEM768-KMAC256+AES256KW     | TBD5    | ML-KEM-768 + KMAC256 + AES256KW   | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM1024-KMAC256+AES256KW   | TBD6    | ML-KEM-1024 + KMAC256 + AES256KW | No            |
+| MLKEM1024-KMAC256+AES256KW    | TBD6    | ML-KEM-1024 + KMAC256 + AES256KW  | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
 ~~~
 {: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
