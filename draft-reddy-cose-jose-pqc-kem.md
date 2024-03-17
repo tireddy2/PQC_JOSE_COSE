@@ -210,7 +210,7 @@ KMAC#(K, X, L, S) takes the following parameters:
 
 > K: the input key-derivation key.  In this document this is the shared secret outputted from the kemEncaps() or kemDecaps() functions.  
 
-> X: the context. In case of JOSE, it will carry the JOSE context specific data defined in Section 4.6.2 of {{RFC7518}}. In case of COSE, the fixedInfo parameter will carry the COSE context structure defined in Section 5.2 of {{!RFC9053}}.
+> X: the context. In case of JOSE, it will carry the JOSE context specific data defined in Section 4.6.2 of {{RFC7518}}. In case of COSE, it will carry the COSE context structure defined in Section 5.2 of {{!RFC9053}}.
 
 > L: the output length, in bits.  
 
@@ -234,8 +234,6 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 * The parameter "kem-ct" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
 
 * The recipient MUST base64url decode the ciphertext from the "kem-ct" and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEMs are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
-
-* The recipient MUST base64url decode the ciphertext from "kem-ct" and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEMs are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
 *  The JWE Encrypted Key MUST be absent.
 
