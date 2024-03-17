@@ -231,11 +231,11 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 
 *  The CEK will be generated using the process explained in {{encrypt}}. The output of the {{encrypt}} MUST be a secret key of the same length as that used by the "enc" algorithm. Both header parameters, "alg" and "enc", MUST be placed in the JWE Protected Header. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. 
 
-* The parameter "ek" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
+* The parameter "kem-ct" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
 
-* The recipient MUST base64url decode the ciphertext from the "ek" and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEMs are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+* The recipient MUST base64url decode the ciphertext from the "kem-ct" and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEMs are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
-* The recipient MUST base64url decode the ciphertext from "ek" and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEMs are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+* The recipient MUST base64url decode the ciphertext from "kem-ct" and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEMs are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
 *  The JWE Encrypted Key MUST be absent.
 
@@ -243,13 +243,13 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 
 * The derived key is generated using the process explained in {{encrypt}} and used to encrypt the CEK. 
 
-* The parameter "ek" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
+* The parameter "kem-ct" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
 
 *  The JWE Encrypted Key MUST include the base64url-encoded encrypted CEK. 
 
 * The 'enc' (Encryption Algorithm) header parameter MUST specify a content encryption algorithm from the JSON Web Signature and Encryption Algorithms registry, as defined in {{JOSE-IANA}}.
 
-* The recipient MUST base64url decode the ciphertext from "ek". Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the CEK.
+* The recipient MUST base64url decode the ciphertext from "kem-ct". Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the CEK.
 
 # Post-Quantum KEM in COSE
 
@@ -382,6 +382,15 @@ PQC KEMs used in the manner described in this document MUST explicitly be design
 # IANA Considerations {#IANA}
 
 ## JOSE
+
+The following has to be added to the "JSON Web Key Parameters" registry:
+
+- Parameter Name: "kem-ct"
+- Parameter Description: PQC KEM ciphertext
+- Parameter Information Class: Public 
+- Change Controller: IANA
+- Specification Document(s): [[TBD: This RFC]]
+- Algorithm Analysis Documents(s): TODO
 
 The following entries are added to the "JSON Web Signature and Encryption Algorithms" registry:
 
