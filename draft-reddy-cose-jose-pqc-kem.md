@@ -59,6 +59,10 @@ normative:
 
 
 informative:
+  FIPS204:
+     title: "FIPS 203 (Initial Public Draft): Module-Lattice-based Key-Encapsulation Mechanism Standard"
+     target: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf
+     date: false
  
   PQCAPI:
      title: "PQC - API notes"
@@ -139,20 +143,20 @@ For efficient use with multiple recipient the key wrap approach is used since th
 
 It is essential to note that in the PQ-KEM, one needs to apply Fujisaki-Okamoto {{FO}} transform or its variant {{HHK}} on the PQC KEM part to ensure that the overall scheme is IND-CCA2 secure, as mentioned in {{?I-D.ietf-tls-hybrid-design}}. The FO transform is performed using the KDF such that the PQC KEM shared secret achieved is IND-CCA2 secure. As a consequence, one can re-use PQC KEM public keys but there is an upper bound that must be adhered to.
 
-Note that during the transition from traditional to post-quantum algorithms, there may be a desire or a requirement for protocols that incorporate both types of algorithms until the post-quantum algorithms are fully trusted. HPKE is an KEM that can be extended to support hybrid post-quantum KEMs and the specifications for the use of HPKE with JOSE and COSE are described in {{?I-D.ietf-rha-jose-hpke-encrypt}} and {{?I-D.ietf-cose-hpke}}, respectively. 
+Note that during the transition from traditional to post-quantum algorithms, there may be a desire or a requirement for protocols that incorporate both types of algorithms until the post-quantum algorithms are fully 
+trusted. HPKE {{?RFC9180}} is a KEM that can be extended to support hybrid post-quantum KEMs and the specification for the use of PQ/T Hybrid Key Encapsulation Mechanism (KEM) in Hybrid Public-Key Encryption (HPKE) for integration with JOSE and COSE is described in {{?I-D.ietf-reddy-cose-jose-pqc-hybrid-hpke}}.
 
 # KEM PQC Algorithms
 
 The National Institute of Standards and Technology (NIST) started a process to solicit, evaluate, and standardize one or more quantum-resistant public-key cryptographic algorithms, as seen [here](https://csrc.nist.gov/projects/post-quantum-cryptography). Said process has reached its [first announcement](https://csrc.nist.gov/publications/detail/nistir/8413/final) in July 5, 2022, which stated which candidates to be standardized for KEM:
 
-* Key Encapsulation Mechanisms (KEMs): [CRYSTALS-Kyber](https://pq-crystals.org/kyber/): ML-KEM, previously known 
- as Kyber, is a module learning with errors (MLWE)-based KEM. Three security levels have been defined in the NIST PQC Project, namely Level 1, 3, and 5. These levels correspond to the hardness of breaking AES-128, AES-192 and AES-256, respectively.
+* Key Encapsulation Mechanisms (KEMs): ML-KEM [FIPS204], previously known as Kyber, is a module learning with errors (MLWE)-based KEM. Three security levels have been defined in the NIST PQC Project, namely Level 1, 3, and 5. These levels correspond to the hardness of breaking AES-128, AES-192 and AES-256, respectively.
 
 NIST announced as well that they will be [opening a fourth round](https://csrc.nist.gov/csrc/media/Projects/post-quantum-cryptography/documents/round-4/guidelines-for-submitting-tweaks-fourth-round.pdf) to standardize an alternative KEM, and a [call](https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/call-for-proposals-dig-sig-sept-2022.pdf) for new candidates for a post-quantum signature algorithm.
 
 ## ML-KEM
 
-ML-KEM offers several parameter sets with varying levels of security and performance trade-offs. This document specifies the use of the ML-KEM algorithm at three security levels: ML-KEM-512, ML-KEM-768, and ML-KEM-1024. ML-KEM key generation, encapsulation and decaspulation functions are defined in {{?I-D.cfrg-schwabe-kyber}}. The main security property for KEMs standardized in the NIST Post-Quantum Cryptography Standardization Project is indistinguishability under adaptive chosen ciphertext attacks (IND-CCA2) (see Section 10.2 of {{?I-D.ietf-pquip-pqc-engineers}}). The public/private key sizes, ciphertext key size, and PQ security levels of ML-KEM are detailed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+ML-KEM offers several parameter sets with varying levels of security and performance trade-offs. This document specifies the use of the ML-KEM algorithm at three security levels: ML-KEM-512, ML-KEM-768, and ML-KEM-1024. ML-KEM key generation, encapsulation and decaspulation functions are defined in [FIPS204]. The main security property for KEMs standardized in the NIST Post-Quantum Cryptography Standardization Project is indistinguishability under adaptive chosen ciphertext attacks (IND-CCA2) (see Section 10.2 of {{?I-D.ietf-pquip-pqc-engineers}}). The public/private key sizes, ciphertext key size, and PQ security levels of ML-KEM are detailed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
 ## PQ-KEM Encapsulation {#encrypt}
 
@@ -173,8 +177,6 @@ The encapsulation process is as follows:
 ~~~
           SS = KDF(SS', SSLen)
 ~~~
-
-TBD: Discuss use of JOSE/COSE context specific data.
 
 In Direct Key Agreement mode, the output of the KDF MUST be a key of the same length as that used by encryption algorithm. In Key Agreement with Key Wrapping mode, the output of the KDF MUST be a key of the length needed for the specified key wrap algorithm. 
 
@@ -204,17 +206,39 @@ The decapsulation process is as follows:
 
 # KDF
 
-KMAC128 and KMAC256 are KMAC-based KDFs specified in this document. KMAC128 and KMAC256 are specified in {{NIST.SP.800-185}}. 
+## Key Derivation for JOSE
 
-KMAC#(K, X, L, S) takes the following parameters:
+The key derivation is performed using the Concat KDF leveraged in Section 4.6.2 of {{?RFC7518}} for JOSE. A different set of contact KDF parameters would be used to construct the agreed-upon key from the shared secret (SS') established through the ML-KEM algorithm, instead of the key derivation process defined in Section 4.6.2 of RFC7518 for JOSE. 
 
-> K: the input key-derivation key.  In this document this is the shared secret outputted from the kemEncaps() or kemDecaps() functions.  
+The Concat KDF parameters are set as follows:
 
-> X: the context. In case of JOSE, it will carry the JOSE context specific data defined in Section 4.6.2 of {{RFC7518}}. In case of COSE, it will carry the COSE context structure defined in Section 5.2 of {{!RFC9053}}.
+   *Z : This is set to the representation of the shared secret (SS').
 
-> L: the output length, in bits.  
+   *keydatalen :  This is set to the number of bits in the desired output key.  For Direct Key Agreement, this is length of the key used by the "enc" algorithm. For Key Agreement with Key Wrapping, "MLKEM512-AES128KW", "MLKEM768-AES192KW", and "MLKEM1024-AES256KW", this is 128, 192, and 256, respectively.
 
-> S: the optional customization label.  In this document this parameter is unused, that is it is the zero-length string "".
+   *AlgorithmID: The AlgorithmID value will be set as explained in Section 4.6.2 of {{?RFC7518}}.
+
+   *CipherText: The ciphertext (CT) generated using the KEM encapsulation function to bind the shared secret to the ciphertext (ct), achieving MAL-BIND-K-CT. ML-KEM already is MAL-BIND-K-PK as the hash of the encapsulation key (pk) is an input to the computation of the shared secret (ss).   
+
+## Key Derivation for COSE
+
+The HKDF (HMAC-based Key Derivation Function) defined in Section 5 of {{?RFC9053}} is utilized to construct the agreed-upon key from the shared secret (SS') established through the ML-KEM algorithm. The HKDF algorithm leverages HMAC-SHA-256 as the underlying PRF (Pseudo-Random function). It takes the inputs defined in Section 5.1 of {{?RFC9053}}, with the exception of the shared secret and context structure inputs. The secret is set to the shared secret established through the ML-KEM algorithm. The context structure, redefined as follows, is used as input to the HKDF.
+
+~~~
+
+      COSE_KDF_Context = [
+          AlgorithmID : int / tstr,
+          SuppPubInfo : [
+              keyDataLength : uint,
+              protected : empty_or_serialized_map,
+              ? other : bstr
+          ],
+          ? SuppPrivInfo : bstr,
+          CipherText: bstr
+      ]
+~~~
+
+The fields AlgorithmID, SuppPubInfo and SuppPrivInfo in the above array are defined in Section 5.2 of {{?RFC9053}}. The CipherText field contains the ciphertext (CT) generated using the KEM encapsulation function to bind the shared secret to the ciphertext (ct).
 
 # Post-quantum KEM in JOSE
 
@@ -271,8 +295,8 @@ transported separately then it is called "detached content". A nil CBOR
 object is placed in the location of the ciphertext. See Section 5
 of {{?RFC9052}} for a description of detached payloads.
 
-The sender MUST set the alg parameter in the protected header, which
-indicates the use of PQ-KEM.
+The sender MUST set the 'alg' parameter in the protected header to indicate the 
+use of the PQ-KEM algorithm.
 
 Although the use of the 'kid' parameter in COSE_Encrypt0 is
 discouraged by {{?RFC9052}}, this documents RECOMMENDS the use of the 'kid' parameter
@@ -306,7 +330,7 @@ As stated above, the specification uses a CEK to encrypt the content at layer 0.
 
 This specification registers a number of PQ-KEM algorithms for use with JOSE. 
 
-All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE128, and SHAKE256. This internal usage influences the selection of the KMAC128 or KMAC256 Key Derivation Function (KDF) as described in this document.
+All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE128, and SHAKE256. This internal usage influences the selection of the Concat KDF as described in this document.
 
 ML-KEM-512 MUST be used with a KDF capable of outputting a key with at least 128 bits of security and with a key wrapping algorithm with a key length of at least 128 bits.
 
@@ -314,23 +338,17 @@ ML-KEM-768 MUST be used with a KDF capable of outputting a key with at least 192
 
 ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 256 bits of security and with a key wrapping algorithm with a key length of at least 256 bits.
 
-For readability the algorithm ciphersuites labels are built according to the following scheme: 
-
-~~~
-<PQ-KEM>-<KDF>
-~~~
-
 * In Direct key agreement, the parameter "alg" MUST be specified, and its value MUST be one of the values specified in {{direct-table}}. (Note that future specifications MAY extend the list of algorithms.)
 
 ~~~
  +===============================+===================================+
  | alg                           | Description                       |
  +===============================+===================================+
- | MLKEM512-KMAC128              | ML-KEM-512 + KMAC128              |
+ | MLKEM512                      | ML-KEM-512                        |
  +===============================+===================================+
- | MLKEM768-KMAC256              | ML-KEM-768 + KMAC256              |
+ | MLKEM768                      | ML-KEM-768                        |
  +===============================+===================================+
- | MLKEM1024-KMAC256             | ML-KEM-1024 + KMAC256             |
+ | MLKEM1024                     | ML-KEM-1024                       |
  +===============================+===================================+
 ~~~
 {: #direct-table title="Direct Key Agreement: Algorithms."}
@@ -341,11 +359,11 @@ For readability the algorithm ciphersuites labels are built according to the fol
  +=================================+===================================+
  | alg                             | Description                       |
  +=================================+===================================+
- | MLKEM512-KMAC128-AES128KW       | ML-KEM-512 + KMAC128 + AES128KW   |
+ | MLKEM512-AES128KW               | ML-KEM-512 + AES128KW             |
  +=================================+===================================+
- | MLKEM768-KMAC256-AES256KW       | ML-KEM-768 + KMAC256 + AES256KW   |
+ | MLKEM768-AES192KW               | ML-KEM-768 + AES192KW             |
  +=================================+===================================+
- | MLKEM1024-KMAC256-AES256KW      | ML-KEM-1024 + KMAC256 + AES256KW  |
+ | MLKEM1024-AES256KW              | ML-KEM-1024 + AES256KW            |
  +=================================+===================================+
 ~~~
 {: #keywrap-table title="Key Agreement with Key Wrapping: Algorithms."}
@@ -358,17 +376,17 @@ For readability the algorithm ciphersuites labels are built according to the fol
 +===============================+=========+===================================+=============+
 | JOSE                          | COSE ID | Description                       | Recommended |
 +===============================+=========+===================================+=============+
-| MLKEM512-KMAC128              | TBD1    | ML-KEM-512 + KMAC128              | No          |
+| MLKEM512                      | TBD1    | ML-KEM-512                        | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM768-KMAC256              | TBD2    | ML-KEM-768 + KMAC256              | No          |
+| MLKEM768                      | TBD2    | ML-KEM-768                        | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM1024-KMAC256             | TBD3    | ML-KEM-1024 + KMAC256             | No          |
+| MLKEM1024                     | TBD3    | ML-KEM-1024                       | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM512-KMAC128+AES128KW     | TBD4    | ML-KEM-512 + KMAC128 + AES128KW   | No          |
+| MLKEM512+AES128KW             | TBD4    | ML-KEM-512  + AES128KW            | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM768-KMAC256+AES256KW     | TBD5    | ML-KEM-768 + KMAC256 + AES256KW   | No          |
+| MLKEM768+AES192KW             | TBD5    | ML-KEM-768  + AES192KW            | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM1024-KMAC256+AES256KW    | TBD6    | ML-KEM-1024 + KMAC256 + AES256KW  | No          |
+| MLKEM1024+AES256KW            | TBD6    | ML-KEM-1024  + AES256KW           | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
 ~~~
 {: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
@@ -392,48 +410,48 @@ The following has to be added to the "JSON Web Key Parameters" registry:
 
 The following entries are added to the "JSON Web Signature and Encryption Algorithms" registry:
 
-- Algorithm Name: MLKEM512-KMAC128
-- Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and the KMAC128 KDF.
+- Algorithm Name: MLKEM512
+- Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
 - Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM768-KMAC256
-- Algorithm Description: PQ-KEM that uses ML-KEM-768 PQ-KEM and the KMAC256 KDF.
+- Algorithm Name: MLKEM768
+- Algorithm Description: PQ-KEM that uses ML-KEM-768 PQ-KEM.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
 - Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM1024-KMAC256
-- Algorithm Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM and the KMAC256 KDF.
+- Algorithm Name: MLKEM1024
+- Algorithm Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
 - Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM512-KMAC128+A128KW
-- Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM, the KMAC128 KDF and CEK wrapped with "A128KW".
+- Algorithm Name: MLKEM512+A128KW
+- Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and CEK wrapped with "A128KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
 - Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM768-KMAC256+A256KW
-- Algorithm Description: PQ-KEM that uses ML-KEM-768, the KMAC256 KDF and CEK wrapped with "A256KW".
+- Algorithm Name: MLKEM768+A192KW
+- Algorithm Description: PQ-KEM that uses ML-KEM-768 and CEK wrapped with "A192KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
 - Change Controller: IANA
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM1024-KMAC256+A256KW
-- Algorithm Description: PQ-KEM that uses ML-KEM-1024, the KMAC256 KDF and CEK wrapped with "A256KW".
+- Algorithm Name: MLKEM1024+A256KW
+- Algorithm Description: PQ-KEM that uses ML-KEM-1024 and CEK wrapped with "A256KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
 - Change Controller: IANA
@@ -444,49 +462,49 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 
 The following has to be added to the "COSE Algorithms" registry:
 
-- Name: MLKEM512-KMAC128
+- Name: MLKEM512
 - Value: TBD1
-- Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and the KMAC128 KDF.
+- Description: PQ-KEM that uses ML-KEM-512 PQ-KEM.
 - Capabilities: [kty]
 - Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM768-KMAC256
+- Name: MLKEM768
 - Value: TBD2
-- Description: PQ-KEM that uses ML-KEM-768 PQ-KEM and the KMAC256 KDF.
+- Description: PQ-KEM that uses ML-KEM-768 PQ-KEM.
 - Capabilities: [kty]
 - Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM1024-KMAC256
+- Name: MLKEM1024
 - Value: TBD3
-- Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM and the KMAC256 KDF.
+- Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM.
 - Capabilities: [kty]
 - Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM512-KMAC128+A128KW
+- Name: MLKEM512+A128KW
 - Value: TBD4
-- Description: PQ-KEM that uses ML-KEM-512 PQ-KEM, the KMAC128 KDF and CEK wrapped with "A128KW".
+- Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and CEK wrapped with "A128KW".
 - Capabilities: [kty]
 - Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM768-KMAC256+A256KW
+- Name: MLKEM768+192KW
 - Value: TBD5
-- Description: PQ-KEM that uses ML-KEM-768, the KMAC256 KDF and CEK wrapped with "A256KW".
+- Description: PQ-KEM that uses ML-KEM-768 and CEK wrapped with "A192KW".
 - Capabilities: [kty]
 - Change Controller: IANA
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM1024-KMAC256+A256KW
+- Name: MLKEM1024+A256KW
 - Value: TBD6
-- Description: PQ-KEM that uses ML-KEM-1024, the KMAC256 KDF and CEK wrapped with "A256KW".
+- Description: PQ-KEM that uses ML-KEM-1024 and CEK wrapped with "A256KW".
 - Capabilities: [kty]
 - Change Controller: IANA
 - Reference: This document (TBD)
