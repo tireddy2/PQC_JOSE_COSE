@@ -79,11 +79,7 @@ informative:
   FIPS203-ipd:
      title: "Module-Lattice-based Key-Encapsulation Mechanism Standard"
      target: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf
-     date: false
-  NIST.SP.800-185:
-     title: "SHA-3 Derived Functions: cSHAKE, KMAC, TupleHash and ParallelHash"
-     target: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf 
-     date: false
+     date: false 
      
 --- abstract
 
@@ -144,7 +140,7 @@ For efficient use with multiple recipient the key wrap approach is used since th
 It is essential to note that in the PQ-KEM, one needs to apply Fujisaki-Okamoto {{FO}} transform or its variant {{HHK}} on the PQC KEM part to ensure that the overall scheme is IND-CCA2 secure, as mentioned in {{?I-D.ietf-tls-hybrid-design}}. The FO transform is performed using the KDF such that the PQC KEM shared secret achieved is IND-CCA2 secure. As a consequence, one can re-use PQC KEM public keys but there is an upper bound that must be adhered to.
 
 Note that during the transition from traditional to post-quantum algorithms, there may be a desire or a requirement for protocols that incorporate both types of algorithms until the post-quantum algorithms are fully 
-trusted. HPKE {{?RFC9180}} is a KEM that can be extended to support hybrid post-quantum KEMs and the specification for the use of PQ/T Hybrid Key Encapsulation Mechanism (KEM) in Hybrid Public-Key Encryption (HPKE) for integration with JOSE and COSE is described in {{?I-D.ietf-reddy-cose-jose-pqc-hybrid-hpke}}.
+trusted. HPKE {{?RFC9180}} is a KEM that can be extended to support hybrid post-quantum KEMs and the specification for the use of PQ/T Hybrid Key Encapsulation Mechanism (KEM) in Hybrid Public-Key Encryption (HPKE) for integration with JOSE and COSE is described in {{?I-D.reddy-cose-jose-pqc-hybrid-hpke}}.
 
 # KEM PQC Algorithms
 
@@ -177,6 +173,8 @@ The encapsulation process is as follows:
 ~~~
           SS = KDF(SS', SSLen)
 ~~~
+
+TBD: ML-KEM can  be used directly without HPKE. However, HPKE with ML-KEM is specifically discussed in the document draft-connolly-cfrg-hpke-mlkem. Specifications like TLS (draft-connolly-tls-mlkem-key-agreement) and IKEv2 (draft-kampanakis-ml-kem-ikev2) utilize ML-KEM directly, without employing HPKE with ML-KEM.
 
 In Direct Key Agreement mode, the output of the KDF MUST be a key of the same length as that used by encryption algorithm. In Key Agreement with Key Wrapping mode, the output of the KDF MUST be a key of the length needed for the specified key wrap algorithm. 
 
@@ -255,9 +253,9 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 
 *  The CEK will be generated using the process explained in {{encrypt}}. The output of the {{encrypt}} MUST be a secret key of the same length as that used by the "enc" algorithm. Both header parameters, "alg" and "enc", MUST be placed in the JWE Protected Header. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. 
 
-* The parameter "kem-ct" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
+* The JWE Encrypted Key MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url. In the JWE Compact Serialization, it avoids double base64url encoding.
 
-* The recipient MUST base64url decode the ciphertext from the "kem-ct" and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEMs are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+* The recipient MUST base64url decode the ciphertext from the JWE Encrypted Key and then use it to derive the CEK using the process defined in {{decrypt}}. 
 
 *  The JWE Encrypted Key MUST be absent.
 
@@ -265,13 +263,13 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 
 * The derived key is generated using the process explained in {{encrypt}} and used to encrypt the CEK. 
 
-* The parameter "kem-ct" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
+* The parameter "ek" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
 
-*  The JWE Encrypted Key MUST include the base64url-encoded encrypted CEK. 
+* The JWE Encrypted Key MUST include the base64url-encoded encrypted CEK. 
 
 * The 'enc' (Encryption Algorithm) header parameter MUST specify a content encryption algorithm from the JSON Web Signature and Encryption Algorithms registry, as defined in {{JOSE-IANA}}.
 
-* The recipient MUST base64url decode the ciphertext from "kem-ct". Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the CEK.
+* The recipient MUST base64url decode the ciphertext from "ek". Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the CEK.
 
 # Post-Quantum KEM in COSE
 
@@ -330,7 +328,7 @@ As stated above, the specification uses a CEK to encrypt the content at layer 0.
 
 This specification registers a number of PQ-KEM algorithms for use with JOSE. 
 
-All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE128, and SHAKE256. This internal usage influences the selection of the Concat KDF as described in this document.
+All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE128, and SHAKE256. This internal usage influences the selection of the KDF as described in this document.
 
 ML-KEM-512 MUST be used with a KDF capable of outputting a key with at least 128 bits of security and with a key wrapping algorithm with a key length of at least 128 bits.
 
@@ -398,15 +396,6 @@ PQC KEMs used in the manner described in this document MUST explicitly be design
 # IANA Considerations {#IANA}
 
 ## JOSE
-
-The following has to be added to the "JSON Web Key Parameters" registry:
-
-- Parameter Name: "kem-ct"
-- Parameter Description: PQC KEM ciphertext
-- Parameter Information Class: Public 
-- Change Controller: IANA
-- Specification Document(s): [[TBD: This RFC]]
-- Algorithm Analysis Documents(s): TODO
 
 The following entries are added to the "JSON Web Signature and Encryption Algorithms" registry:
 
