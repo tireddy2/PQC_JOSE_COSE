@@ -79,11 +79,7 @@ informative:
   FIPS203-ipd:
      title: "Module-Lattice-based Key-Encapsulation Mechanism Standard"
      target: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf
-     date: false
-  NIST.SP.800-185:
-     title: "SHA-3 Derived Functions: cSHAKE, KMAC, TupleHash and ParallelHash"
-     target: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-185.pdf 
-     date: false
+     date: false 
      
 --- abstract
 
@@ -144,7 +140,7 @@ For efficient use with multiple recipient the key wrap approach is used since th
 It is essential to note that in the PQ-KEM, one needs to apply Fujisaki-Okamoto {{FO}} transform or its variant {{HHK}} on the PQC KEM part to ensure that the overall scheme is IND-CCA2 secure, as mentioned in {{?I-D.ietf-tls-hybrid-design}}. The FO transform is performed using the KDF such that the PQC KEM shared secret achieved is IND-CCA2 secure. As a consequence, one can re-use PQC KEM public keys but there is an upper bound that must be adhered to.
 
 Note that during the transition from traditional to post-quantum algorithms, there may be a desire or a requirement for protocols that incorporate both types of algorithms until the post-quantum algorithms are fully 
-trusted. HPKE {{?RFC9180}} is a KEM that can be extended to support hybrid post-quantum KEMs and the specification for the use of PQ/T Hybrid Key Encapsulation Mechanism (KEM) in Hybrid Public-Key Encryption (HPKE) for integration with JOSE and COSE is described in {{?I-D.ietf-reddy-cose-jose-pqc-hybrid-hpke}}.
+trusted. HPKE {{?RFC9180}} is a KEM that can be extended to support hybrid post-quantum KEMs and the specification for the use of PQ/T Hybrid Key Encapsulation Mechanism (KEM) in Hybrid Public-Key Encryption (HPKE) for integration with JOSE and COSE is described in {{?I-D.reddy-cose-jose-pqc-hybrid-hpke}}.
 
 # KEM PQC Algorithms
 
@@ -178,6 +174,8 @@ The encapsulation process is as follows:
           SS = KDF(SS', SSLen)
 ~~~
 
+TBD: ML-KEM can be used directly without HPKE. However, HPKE with ML-KEM is specifically discussed in the document draft-connolly-cfrg-hpke-mlkem. Specifications like TLS (draft-connolly-tls-mlkem-key-agreement) and IKEv2 (draft-kampanakis-ml-kem-ikev2) utilize ML-KEM directly, without employing HPKE with ML-KEM.
+
 In Direct Key Agreement mode, the output of the KDF MUST be a key of the same length as that used by encryption algorithm. In Key Agreement with Key Wrapping mode, the output of the KDF MUST be a key of the length needed for the specified key wrap algorithm. 
 
 When Direct Key Agreement is employed, SS is the CEK. When Key Agreement with Key Wrapping is employed, SS is used to wrap the CEK.
@@ -208,37 +206,34 @@ The decapsulation process is as follows:
 
 ## Key Derivation for JOSE
 
-The key derivation is performed using the Concat KDF leveraged in Section 4.6.2 of {{?RFC7518}} for JOSE. A different set of contact KDF parameters would be used to construct the agreed-upon key from the shared secret (SS') established through the ML-KEM algorithm, instead of the key derivation process defined in Section 4.6.2 of RFC7518 for JOSE. 
+The key derivation for JOSE is performed using the KMAC defined in NIST SP 800-56Cr2 [SP800-56C]. The KMAC(K, X, L, S) parameters are instantiated as follows:
 
-The Concat KDF parameters are set as follows:
+   *  K: the input key-derivation key. In this document this is the shared secret (SS') outputted from the 
+      kemEncaps() or kemDecaps() functions.
 
-   *Z : This is set to the representation of the shared secret (SS').
+   *  X: JOSE context-specific data defined in Section 4.6.2 of {{?RFC7518}}, i.e., concat(AlgorithmID, PartyUInfo, PartyVInfo, 
+      SuppPubInfo, SuppPrivInfo).
 
-   *keydatalen :  This is set to the number of bits in the desired output key.  For Direct Key Agreement, this is length of the key used by the "enc" algorithm. For Key Agreement with Key Wrapping, "MLKEM512-AES128KW", "MLKEM768-AES192KW", and "MLKEM1024-AES256KW", this is 128, 192, and 256, respectively.
+   *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
-   *AlgorithmID: The AlgorithmID value will be set as explained in Section 4.6.2 of {{?RFC7518}}.
+   *  S: the optional customization label. In this document this parameter is unused, that is it is the zero-length string "".
 
-   *CipherText: The ciphertext (CT) generated using the KEM encapsulation function to bind the shared secret to the ciphertext (ct), achieving MAL-BIND-K-CT. ML-KEM already is MAL-BIND-K-PK as the hash of the encapsulation key (pk) is an input to the computation of the shared secret (ss).   
+For all security levels of ML-KEM, KMAC256 is used.
 
 ## Key Derivation for COSE
 
-The HKDF (HMAC-based Key Derivation Function) defined in Section 5 of {{?RFC9053}} is utilized to construct the agreed-upon key from the shared secret (SS') established through the ML-KEM algorithm. The HKDF algorithm leverages HMAC-SHA-256 as the underlying PRF (Pseudo-Random function). It takes the inputs defined in Section 5.1 of {{?RFC9053}}, with the exception of the shared secret and context structure inputs. The secret is set to the shared secret established through the ML-KEM algorithm. The context structure, redefined as follows, is used as input to the HKDF.
+The key derivation for COSE is performed using the KMAC defined in NIST SP 800-56Cr2 [SP800-56C]. The KMAC(K, X, L, S) parameters are instantiated as follows:
 
-~~~
+   *  K: the input key-derivation key. In this document this is the shared secret (SS') outputted from the 
+      kemEncaps() or kemDecaps() functions.
 
-      COSE_KDF_Context = [
-          AlgorithmID : int / tstr,
-          SuppPubInfo : [
-              keyDataLength : uint,
-              protected : empty_or_serialized_map,
-              ? other : bstr
-          ],
-          ? SuppPrivInfo : bstr,
-          CipherText: bstr
-      ]
-~~~
+   *  X: The context structure defined in Section 5.2 of {{?RFC9053}}.
 
-The fields AlgorithmID, SuppPubInfo and SuppPrivInfo in the above array are defined in Section 5.2 of {{?RFC9053}}. The CipherText field contains the ciphertext (CT) generated using the KEM encapsulation function to bind the shared secret to the ciphertext (ct).
+   *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
+
+   *  S: the optional customization label. In this document this parameter is unused, that is it is the zero-length string "".
+
+For all security levels of ML-KEM, KMAC256 is used.
 
 # Post-quantum KEM in JOSE
 
@@ -253,11 +248,13 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 
 *  The "alg" header parameter MUST be a PQ-KEM algorithm chosen from the JSON Web Signature and Encryption Algorithms registry defined in {{JOSE-IANA}}. 
 
-*  The CEK will be generated using the process explained in {{encrypt}}. The output of the {{encrypt}} MUST be a secret key of the same length as that used by the "enc" algorithm. Both header parameters, "alg" and "enc", MUST be placed in the JWE Protected Header. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. 
+*  The CEK will be generated using the process explained in {{encrypt}}. The output of the {{encrypt}} MUST be a secret key of the same length as that used by the "enc" algorithm. 
 
-* The parameter "kem-ct" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
+* The usage for the "alg" and "enc" header parameters remain the same as in JWE {{RFC7516}}: both header parameters, "alg" and "enc", MUST be placed in the JWE Protected Header. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. 
 
-* The recipient MUST base64url decode the ciphertext from the "kem-ct" and then use it to derive the CEK using the process defined in {{decrypt}}. The ciphertext sizes of ML-KEMs are discussed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+* The JWE Encrypted Key MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url. In the JWE Compact Serialization, it avoids double base64url encoding.
+
+* The recipient MUST base64url decode the ciphertext from the JWE Encrypted Key and then use it to derive the CEK using the process defined in {{decrypt}}. 
 
 *  The JWE Encrypted Key MUST be absent.
 
@@ -265,46 +262,43 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 
 * The derived key is generated using the process explained in {{encrypt}} and used to encrypt the CEK. 
 
-* The parameter "kem-ct" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
+* The parameter "ek" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
 
-*  The JWE Encrypted Key MUST include the base64url-encoded encrypted CEK. 
+* The JWE Encrypted Key MUST include the base64url-encoded encrypted CEK. 
 
 * The 'enc' (Encryption Algorithm) header parameter MUST specify a content encryption algorithm from the JSON Web Signature and Encryption Algorithms registry, as defined in {{JOSE-IANA}}.
 
-* The recipient MUST base64url decode the ciphertext from "kem-ct". Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the CEK.
+* The recipient MUST base64url decode the ciphertext from "ek". Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the CEK.
 
 # Post-Quantum KEM in COSE
 
 This specification supports two uses of PQ-KEM in COSE, namely
 
-*  PQ-KEM in a single recipient setup.  This use case utilizes a one
-   layer COSE structure. 
+*  PQ-KEM in a Direct Key Agreement mode. 
 
-*  PQ-KEM in a multiple recipient setup.  This use case requires a two
-   layer COSE structure.  
+*  PQ-KEM in a Key Agreement with Key Wrap mode.  
 
-## Single Recipient / One Layer Structure
+In both modes, the COSE header parameter 'ek' defined in Section 7.2 of {{?I-D.ietf-cose-hpke}}, 
+is used to convey the output ('ct') from the PQ KEM Encaps algorithm.
 
-With the one layer structure the information carried inside the 
-COSE_recipient structure is embedded inside the COSE_Encrypt0. 
+## Direct Key Agreement
 
 The CEK will be generated using the process explained in {{encrypt}}. 
 Subsequently, the plaintext will be encrypted using the CEK. The resulting 
-ciphertext is either included in the COSE_Encrypt0 or is detached. If a payload is
+ciphertext is either included in the COSE_Encrypt or is detached. If a payload is
 transported separately then it is called "detached content". A nil CBOR
 object is placed in the location of the ciphertext. See Section 5
 of {{?RFC9052}} for a description of detached payloads.
 
-The sender MUST set the 'alg' parameter in the protected header to indicate the 
-use of the PQ-KEM algorithm.
+The COSE_Recipient structure for the recipient is organized as follows:
 
-Although the use of the 'kid' parameter in COSE_Encrypt0 is
-discouraged by {{?RFC9052}}, this documents RECOMMENDS the use of the 'kid' parameter
-(or other parameters) to explicitly identify the recipient public key
-used by the sender. If the COSE_Encrypt0 contains the 'kid' then the recipient may
-use it to select the appropriate private key.
+   * The sender MUST set the 'alg' parameter to indicate the use of the PQ-KEM algorithm.
+   * This documents RECOMMENDS the use of the 'kid' parameter
+     (or other parameters) to explicitly identify the recipient public key
+     used by the sender. If the COSE_Encrypt contains the 'kid' then the recipient may
+     use it to select the appropriate private key.
 
-## Multiple Recipients / Two Layer Structure
+## Key Agreement with Key Wrap
 
 With the two layer structure the PQ-KEM information is conveyed in the COSE_recipient 
 structure, i.e. one COSE_recipient structure per recipient.
@@ -317,10 +311,9 @@ it is included in the COSE_Encrypt structure.
 
 - Layer 1 (corresponding to a recipient structure) contains parameters needed for 
 PQ-KEM to generate a shared secret used to encrypt the CEK. This layer conveys  
-the output ('ct') from the PQ KEM Encaps algorithm in the 'ek' header 
-parameter (Section 7.2 of {{?I-D.ietf-cose-hpke}}) and encrypted CEK in the encCEK structure
-(Section 3.1.2 of {{?I-D.ietf-cose-hpke}}). The unprotected header MAY contain the kid 
-parameter to identify the static recipient public key the sender has been using with PQ-KEM.
+the encrypted CEK in the "ciphertext" field (Section 5.1 of {{?RFC9052}}). 
+The unprotected header MAY contain the kid parameter to identify the static recipient 
+public key the sender has been using with PQ-KEM.
 
 This two-layer structure is used to encrypt content that can also be shared with
 multiple parties at the expense of a single additional encryption operation.
@@ -330,7 +323,7 @@ As stated above, the specification uses a CEK to encrypt the content at layer 0.
 
 This specification registers a number of PQ-KEM algorithms for use with JOSE. 
 
-All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE128, and SHAKE256. This internal usage influences the selection of the Concat KDF as described in this document.
+All security levels of ML-KEM internally utilize SHA3-256, SHA3-512, SHAKE128, and SHAKE256. This internal usage influences the selection of the KDF as described in this document.
 
 ML-KEM-512 MUST be used with a KDF capable of outputting a key with at least 128 bits of security and with a key wrapping algorithm with a key length of at least 128 bits.
 
@@ -398,15 +391,6 @@ PQC KEMs used in the manner described in this document MUST explicitly be design
 # IANA Considerations {#IANA}
 
 ## JOSE
-
-The following has to be added to the "JSON Web Key Parameters" registry:
-
-- Parameter Name: "kem-ct"
-- Parameter Description: PQC KEM ciphertext
-- Parameter Information Class: Public 
-- Change Controller: IANA
-- Specification Document(s): [[TBD: This RFC]]
-- Algorithm Analysis Documents(s): TODO
 
 The following entries are added to the "JSON Web Signature and Encryption Algorithms" registry:
 
