@@ -208,7 +208,7 @@ The decapsulation process is as follows:
 
 The key derivation for JOSE is performed using the KMAC defined in NIST SP 800-56Cr2 [SP800-56C]. The KMAC(K, X, L, S) parameters are instantiated as follows:
 
-   *  K: the input key-derivation key. In this document this is the shared secret (SS') outputted from the 
+   *  K: the input key-derivation key. In this document this is the initial shared secret (SS') outputted from the 
       kemEncaps() or kemDecaps() functions.
 
    *  X: JOSE context-specific data defined in Section 4.6.2 of {{?RFC7518}}, i.e., concat(AlgorithmID, PartyUInfo, PartyVInfo, 
@@ -224,7 +224,7 @@ For all security levels of ML-KEM, KMAC256 is used.
 
 The key derivation for COSE is performed using the KMAC defined in NIST SP 800-56Cr2 [SP800-56C]. The KMAC(K, X, L, S) parameters are instantiated as follows:
 
-   *  K: the input key-derivation key. In this document this is the shared secret (SS') outputted from the 
+   *  K: the input key-derivation key. In this document this is the initial shared secret (SS') outputted from the 
       kemEncaps() or kemDecaps() functions.
 
    *  X: The context structure defined in Section 5.2 of {{?RFC9053}}.
