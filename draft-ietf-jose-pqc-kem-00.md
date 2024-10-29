@@ -3,14 +3,14 @@ title: "Post-Quantum Key Encapsulation Mechanisms (PQ KEMs) for JOSE and COSE"
 abbrev: "PQ KEM for JOSE and COSE"
 category: std
 
-docname: draft-reddy-cose-jose-pqc-kem
+docname: draft-ietf-jose-pqc-kem
 submissiontype: IETF
 number:
 date:
 consensus: true
 v: 3
 area: "Security"
-workgroup: "COSE"
+workgroup: "JOSE"
 keyword:
  - PQC
  - COSE
@@ -18,9 +18,9 @@ keyword:
  - Hybrid
 
 venue:
-  group: "cose" 
+  group: "jose" 
   type: "Working Group"
-  mail: "cose@ietf.org" 
+  mail: "jose@ietf.org" 
   arch: "https://mailarchive.ietf.org/arch/browse/cose/" 
   
 stand_alone: yes
@@ -94,7 +94,7 @@ This document describes the conventions for using Post-Quantum Key Encapsulation
 
 # Introduction
 
-Quantum computing is no longer perceived as a conjecture of computational sciences and theoretical physics.  Considerable research efforts and enormous corporate and government funding for the development of practical quantum computing systems are being invested currently. As such, as quantum technology advances, there is the potential for future quantum computers to have a significant impact on current cryptographic systems. 
+Quantum computing is no longer perceived as a consequence of computational sciences and theoretical physics.  Considerable research efforts and enormous corporate and government funding for the development of practical quantum computing systems are being invested currently. As such, as quantum technology advances, there is the potential for future quantum computers to have a significant impact on current cryptographic systems. 
 
 Researchers have developed Post-Quantum Key Encapsulation Mechanisms (PQ-KEMs) to provide secure key establishment resistant against an adversary with access to a quantum computer.
 
