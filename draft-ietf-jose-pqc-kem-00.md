@@ -42,8 +42,8 @@ author:
     email: "aritra.banerjee@nokia.com"
  -
     fullname: Hannes Tschofenig
-    organization:
-    city:
+    organization: University of Applied Sciences Bonn-Rhein-Sieg
+    abbrev: H-BRS
     country: Germany
     email: "hannes.tschofenig@gmx.net"
  
