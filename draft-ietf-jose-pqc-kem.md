@@ -78,7 +78,7 @@ informative:
      target: https://link.springer.com/chapter/10.1007/978-3-319-70500-2_12
      date: false
   FIPS203:
-     title: "Module-Lattice-based Key-Encapsulation Mechanism Standard"
+     title: "FIPS-203: Module-Lattice-based Key-Encapsulation Mechanism Standard"
      target: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
      date: false 
   SP-800-108r1:
@@ -92,6 +92,12 @@ informative:
      title: "A Method for Obtaining Digital Signatures and Public-Key Cryptosystems+"
      target: https://dl.acm.org/doi/pdf/10.1145/359340.359342
      date: false
+  NIST.SP.800-56Ar3:
+     author:
+        org: National Institute of Standards and Technology
+     title: Recommendation for Pair-Wise Key-Establishment Schemes Using Discrete Logarithm Cryptography, NIST Special Publication 800-56A Revision 3
+     target: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-56Ar3.pdf
+     date: April 2018
      
 --- abstract
 
@@ -156,7 +162,7 @@ trusted. HPKE {{?RFC9180}} is a KEM that can be extended to support hybrid post-
 
 # KEM PQC Algorithms
 
-At time of writing, NIST have standardized three PQC algorithms, with more expected to be standardised in the future ({{NISTFINAL}}). These algorithms are not necessarily drop-in replacements for traditional asymmetric cryptographic algorithms. For instance, RSA {{RSA}} and ECC {{?RFC6090}} can be used as both a key encapsulation method (KEM) and as a signature scheme, whereas there is currently no post-quantum algorithm that can perform both functions. When upgrading protocols, it is important to replace the existing use of traditional algorithms with either a PQC KEM or a PQC signature method, depending on how the traditional algorithm was previously being used. Additionally, KEMs, as described in {{KEMs}}, present a different API than either key agreement or key transport primitives. As a result, they may require protocol-level or application-level changes in order to be incorporated.
+At time of writing, NIST have standardized three PQC algorithms, with more expected to be standardised in the future ({{NISTFINAL}}). These algorithms are not necessarily drop-in replacements for traditional asymmetric cryptographic algorithms. For instance, RSA {{RSA}} and ECC {{?RFC6090}} can be used as both a key encapsulation method (KEM) and as a signature scheme, whereas there is currently no post-quantum algorithm that can perform both functions. 
 
 ## ML-KEM
 
@@ -217,8 +223,7 @@ The key derivation for JOSE is performed using the KMAC defined in NIST SP 800-1
    *  K: the input key-derivation key. In this document this is the initial shared secret (SS') outputted from the 
       kemEncaps() or kemDecaps() functions.
 
-   *  X: JOSE context-specific data defined in Section 4.6.2 of {{?RFC7518}}, i.e., concat(AlgorithmID, PartyUInfo, PartyVInfo, 
-      SuppPubInfo, SuppPrivInfo).
+   *  X: The context defaults to the empty string. If mutually known private information is to be used, both the sender and the recipient MUST agree out-of-band to include it as context in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. If such agreement is not in place, the context MUST be the empty string.
 
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
@@ -233,7 +238,7 @@ The key derivation for COSE is performed using the KMAC defined in NIST SP 800-1
    *  K: the input key-derivation key. In this document this is the initial shared secret (SS') outputted from the 
       kemEncaps() or kemDecaps() functions.
 
-   *  X: The context structure defined in Section 5.2 of {{?RFC9053}}. To ensure consistent serialization and interoperability, the encoding of the context structure in COSE must follow CBOR deterministic encoding, as defined in {{RFC8949}}.
+   *  X: The context defaults to the empty string; mutually known private information MAY be used instead.
    
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
@@ -258,9 +263,9 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 
 * The usage for the "alg" and "enc" header parameters remain the same as in JWE {{RFC7516}}. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. 
 
-* The parameter "ek" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
+* The header parameter encapsulated key "ek" defined in {{!I-D.ietf-jose-hpke-encrypt}} MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
 
-* The recipient MUST base64url decode the ciphertext from the JWE Encrypted Key and then use it to derive the CEK using the process defined in {{decrypt}}. 
+* The recipient MUST base64url decode the ciphertext from the "ek" header parameter and then use it to derive the CEK using the process defined in {{decrypt}}. 
 
 *  The JWE Encrypted Key MUST be absent.
 
