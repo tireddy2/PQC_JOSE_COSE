@@ -238,7 +238,7 @@ The key derivation for COSE is performed using the KMAC defined in NIST SP 800-1
    *  K: the input key-derivation key. In this document this is the initial shared secret (SS') outputted from the 
       kemEncaps() or kemDecaps() functions.
 
-   *  X: The context defaults to the empty string; mutually known private information MAY be used instead.
+   *  X: The context defaults to the empty string. If mutually known private information is to be used, both the sender and the recipient MUST agree out-of-band to include it as context in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. If such agreement is not in place, the context MUST be the empty string.
    
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
@@ -394,6 +394,12 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 +-------------------------------+---------+-----------------------------------+-------------+
 ~~~
 {: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
+
+# Use of AKP Key Type for PQC KEM Keys in JOSE and COSE
+
+The `AKP` (Algorithm Key Pair) key type, as defined in {{!I-D.ietf-cose-dilithium}}, supports PQC algorithms, including both signature schemes and KEMs. 
+
+When used with JOSE or COSE that rely on post-quantum KEMs (e.g., ML-KEM), a key with "kty" set to "AKP" represents a KEM key pair. The public key is carried in the "pub" parameter and, if the private key is present, it is carried in the "priv" parameter. When AKP keys are expressed in JWK, key parameters are base64url encoded.
 
 # Security Considerations
 
