@@ -223,7 +223,7 @@ The key derivation for JOSE is performed using the KMAC defined in NIST SP 800-1
    *  K: the input key-derivation key. In this document this is the initial shared secret (SS') outputted from the 
       kemEncaps() or kemDecaps() functions.
 
-   *  X: The context defaults to the empty string. If mutually known private information is to be used, both the sender and the recipient MUST agree out-of-band to include it as context in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. If such agreement is not in place, the context MUST be the empty string.
+   *  X: A subset of the JOSE context-specific data defined in Section 4.6.2 of {{RFC7518}}, i.e., concat(AlgorithmID, SuppPubInfo, SuppPrivInfo), is used. The fields PartyUInfo and PartyVInfo are excluded. PartyUInfo is omitted because sender authentication is not available in PQ KEMs. PartyVInfo is excluded because the recipient's identity is already bound to the public key used for encapsulation, making its inclusion redundant. If mutually known private information is to be included, both the sender and the recipient MUST agree out-of-band to include it as SuppPrivInfo in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. 
 
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
@@ -238,7 +238,7 @@ The key derivation for COSE is performed using the KMAC defined in NIST SP 800-1
    *  K: the input key-derivation key. In this document this is the initial shared secret (SS') outputted from the 
       kemEncaps() or kemDecaps() functions.
 
-   *  X: The context defaults to the empty string. If mutually known private information is to be used, both the sender and the recipient MUST agree out-of-band to include it as context in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. If such agreement is not in place, the context MUST be the empty string.
+   *  X: The context structure defined in Section 5.2 of [RFC9053] excluding PartyUInfo and PartyVInfo fields. PartyUInfo is omitted because sender authentication is not available in PQ KEMs. PartyVInfo is excluded because the recipient's identity is already bound to the public key used for encapsulation, making its inclusion redundant. If mutually known private information is to be included, both the sender and the recipient MUST agree out-of-band to include it as SuppPrivInfo in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. 
    
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
@@ -395,11 +395,12 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 ~~~
 {: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
 
-# Use of AKP Key Type for PQC KEM Keys in JOSE and COSE
+# Use of OKP Key Type for PQC KEM Keys in JOSE and COSE
 
-The `AKP` (Algorithm Key Pair) key type, as defined in {{!I-D.ietf-cose-dilithium}}, supports PQC algorithms, including both signature schemes and KEMs. 
+The "OKP" (Octet Key Pair) key type, defined in {{!RFC8037}}, is used in this specification to represent PQC KEM keys for use in JOSE and COSE. 
+When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "OKP" represents a KEM key pair. The "crv" (curve) parameter identifies the specific PQC KEM algorithm. The public key is carried in the "x" parameter. If a private key is included, it is represented using the "d" parameter. When expressed in JWK, all key parameters are base64url encoded.
 
-When used with JOSE or COSE that rely on post-quantum KEMs (e.g., ML-KEM), a key with "kty" set to "AKP" represents a KEM key pair. The public key is carried in the "pub" parameter and, if the private key is present, it is carried in the "priv" parameter. When AKP keys are expressed in JWK, key parameters are base64url encoded.
+Note: Although the "AKP" (Algorithm Key Pair) key type is defined in {{?I-D.ietf-cose-dilithium}} for representing post-quantum keys, it mandates the use of the "alg" parameter. While this works for PQ digital signatures, its use with PQ KEMs would require distinguishing between keys intended for Direct Key Agreement and Key Agreement with Key Wrap. This constraint introduces ambiguity in JOSE/COSE and is therefore not used in this specification.
 
 # Security Considerations
 
