@@ -57,7 +57,16 @@ normative:
         org: IANA
      title: JSON Web Signature and Encryption Algorithms
      target: https://www.iana.org/assignments/jose/jose.xhtml
-
+  JOSE-IANA-Curves:
+     author:
+        org: IANA
+     title: JSON Web Key Elliptic Curve
+     target: https://www.iana.org/assignments/jose/jose.xhtml
+  COSE-IANA-Curves:
+     author:
+        org: IANA
+     title: COSE Elliptic Curves
+     target: https://www.iana.org/assignments/cose
 
 informative:
   FIPS204:
@@ -398,7 +407,7 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 # Use of OKP Key Type for PQC KEM Keys in JOSE and COSE
 
 The "OKP" (Octet Key Pair) key type, defined in {{!RFC8037}}, is used in this specification to represent PQC KEM keys for use in JOSE and COSE. 
-When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "OKP" represents a KEM key pair. The "crv" (curve) parameter identifies the specific PQC KEM algorithm. The public key is carried in the "x" parameter. If a private key is included, it is represented using the "d" parameter. When expressed in JWK, all key parameters are base64url encoded.
+When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "OKP" represents a KEM key pair. The "crv" (subtype of key pair) parameter identifies the specific PQC KEM algorithm. The public key is carried in the "x" parameter. If a private key is included, it is represented using the "d" parameter. When expressed in JWK, all key parameters are base64url encoded.
 
 Note: Although the "AKP" (Algorithm Key Pair) key type is defined in {{?I-D.ietf-cose-dilithium}} for representing post-quantum keys, it mandates the use of the "alg" parameter. While this works for PQ digital signatures, its use with PQ KEMs would require distinguishing between keys intended for Direct Key Agreement and Key Agreement with Key Wrap. This constraint introduces ambiguity in JOSE/COSE and is therefore not used in this specification.
 
@@ -460,6 +469,38 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
+### JSON Web Key Elliptic Curves Registrations
+
+IANA is requested to register the following values in the "JSON Web Key Elliptic Curve" registry {{JOSE-IANA-Curves}}.
+
+## ML-KEM-512
+
+| Curve Name              | ML-KEM-512                                                              |
+|-------------------------|-------------------------------------------------------------------------|
+| Curve Description       | NIST Post-Quantum ML-KEM-512 algorithm |
+| JOSE Implementation Requirements | Optional                                                      |
+| Change Controller       | IESG                                                                   |
+| Specification Document(s) | This document   
+
+## ML-KEM-768
+
+| Curve Name              | ML-KEM-768                                                              |
+|-------------------------|-------------------------------------------------------------------------|
+| Curve Description       | NIST Post-Quantum ML-KEM-768 algorithm |
+| JOSE Implementation Requirements | Optional                                                      |
+| Change Controller       | IESG                                                                   |
+| Specification Document(s) | This document                                                       |
+
+## ML-KEM-1024
+
+| Curve Name              | ML-KEM-1024                                                             |
+|-------------------------|-------------------------------------------------------------------------|
+| Curve Description       | NIST Post-Quantum ML-KEM-1024 algorithm |
+| JOSE Implementation Requirements | Optional                                                      |
+| Change Controller       | IESG                                                                   |
+| Specification Document(s) | This document                                                       |
+
+
 ## COSE
 
 The following has to be added to the "COSE Algorithms" registry:
@@ -512,6 +553,42 @@ The following has to be added to the "COSE Algorithms" registry:
 - Reference: This document (TBD)
 - Recommended: No
 
+# COSE Elliptic Curves Registrations
+
+IANA is requested to register the following values in the "COSE Elliptic Curves" registry {{COSE-IANA-Curves}}.
+
+## ML-KEM-512
+
+| Name             | ML-KEM-512                                                              |
+|------------------|-------------------------------------------------------------------------|
+| Value            | TBD2                                                                    |
+| Key Type         | OKP                                                                     |
+| Description      | NIST Post-Quantum ML-KEM-512 |
+| Change Controller| IESG                                                                    |
+| Reference        | This document                                                           |
+| Recommended      | No 
+
+## ML-KEM-768
+
+| Name             | ML-KEM-768                                                              |
+|------------------|-------------------------------------------------------------------------|
+| Value            | TBD2                                                                    |
+| Key Type         | OKP                                                                     |
+| Description      | NIST Post-Quantum ML-KEM-768 |
+| Change Controller| IESG                                                                    |
+| Reference        | This document                                                           |
+| Recommended      | No                                                                      |
+
+## ML-KEM-1024
+
+| Name             | ML-KEM-1024                                                             |
+|------------------|-------------------------------------------------------------------------|
+| Value            | TBD3                                                                   |
+| Key Type         | OKP                                                                     |
+| Description      | NIST Post-Quantum ML-KEM-1024 |
+| Change Controller| IESG                                                                    |
+| Reference        | This document                                                           |
+| Recommended      | No                                                                      |
 
 # Acknowledgments
 {: numbered="false"}
