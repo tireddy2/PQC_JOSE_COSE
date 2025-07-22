@@ -248,7 +248,7 @@ The key derivation for COSE is performed using the KMAC defined in NIST SP 800-1
       kemEncaps() or kemDecaps() functions.
 
    *  X: The context structure defined in Section 5.2 of [RFC9053] excluding PartyUInfo and PartyVInfo fields. PartyUInfo is omitted because sender authentication is not available in PQ KEMs. PartyVInfo is excluded because the recipient's identity is already bound to the public key used for encapsulation, making its inclusion redundant. If mutually known private information is to be included, both the sender and the recipient MUST agree out-of-band to include it as SuppPrivInfo in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. 
-   
+  
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
    *  S: the optional customization label. In this document this parameter is unused, that is it is the zero-length string "".
