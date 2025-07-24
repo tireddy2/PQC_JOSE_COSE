@@ -372,11 +372,11 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
  +=================================+===================================+
  | alg                             | Description                       |
  +=================================+===================================+
- | MLKEM512-AES128KW               | ML-KEM-512 + AES128KW             |
+ | MLKEM512+A128KW                 | ML-KEM-512 + AES128KW             |
  +=================================+===================================+
- | MLKEM768-AES192KW               | ML-KEM-768 + AES192KW             |
+ | MLKEM768+A192KW                 | ML-KEM-768 + AES192KW             |
  +=================================+===================================+
- | MLKEM1024-AES256KW              | ML-KEM-1024 + AES256KW            |
+ | MLKEM1024+A256KW                | ML-KEM-1024 + AES256KW            |
  +=================================+===================================+
 ~~~
 {: #keywrap-table title="Key Agreement with Key Wrapping: Algorithms."}
@@ -395,11 +395,11 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 +-------------------------------+---------+-----------------------------------+-------------+
 | MLKEM1024                     | TBD3    | ML-KEM-1024                       | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM512+AES128KW             | TBD4    | ML-KEM-512  + AES128KW            | No          |
+| MLKEM512+A128KW               | TBD4    | ML-KEM-512 + AES128KW             | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM768+AES192KW             | TBD5    | ML-KEM-768  + AES192KW            | No          |
+| MLKEM768+A192KW               | TBD5    | ML-KEM-768 + AES192KW             | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM1024+AES256KW            | TBD6    | ML-KEM-1024  + AES256KW           | No          |
+| MLKEM1024+A256KW              | TBD6    | ML-KEM-1024 + AES256KW            | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
 ~~~
 {: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
