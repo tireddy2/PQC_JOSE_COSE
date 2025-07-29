@@ -354,11 +354,11 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
  +===============================+===================================+
  | alg                           | Description                       |
  +===============================+===================================+
- | MLKEM512                      | ML-KEM-512                        |
+ | ML-KEM-512                    | ML-KEM-512                        |
  +===============================+===================================+
- | MLKEM768                      | ML-KEM-768                        |
+ | ML-KEM-768                    | ML-KEM-768                        |
  +===============================+===================================+
- | MLKEM1024                     | ML-KEM-1024                       |
+ | ML-KEM-1024                   | ML-KEM-1024                       |
  +===============================+===================================+
 ~~~
 {: #direct-table title="Direct Key Agreement: Algorithms."}
@@ -369,11 +369,11 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
  +=================================+===================================+
  | alg                             | Description                       |
  +=================================+===================================+
- | MLKEM512+A128KW                 | ML-KEM-512 + AES128KW             |
+ | ML-KEM-512+A128KW               | ML-KEM-512  + AES128KW            |
  +=================================+===================================+
- | MLKEM768+A192KW                 | ML-KEM-768 + AES192KW             |
+ | ML-KEM-768+A192KW               | ML-KEM-768  + AES192KW            |
  +=================================+===================================+
- | MLKEM1024+A256KW                | ML-KEM-1024 + AES256KW            |
+ | ML-KEM-1024+A256KW              | ML-KEM-1024 + AES256KW            |
  +=================================+===================================+
 ~~~
 {: #keywrap-table title="Key Agreement with Key Wrapping: Algorithms."}
@@ -386,17 +386,17 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 +===============================+=========+===================================+=============+
 | JOSE                          | COSE ID | Description                       | Recommended |
 +===============================+=========+===================================+=============+
-| MLKEM512                      | TBD1    | ML-KEM-512                        | No          |
+| ML-KEM-512                    | TBD1    | ML-KEM-512                        | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM768                      | TBD2    | ML-KEM-768                        | No          |
+| ML-KEM-768                    | TBD2    | ML-KEM-768                        | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM1024                     | TBD3    | ML-KEM-1024                       | No          |
+| ML-KEM-1024                   | TBD3    | ML-KEM-1024                       | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM512+A128KW               | TBD4    | ML-KEM-512  + AES128KW            | No          |
+| ML-KEM-512+A128KW             | TBD4    | ML-KEM-512  + AES128KW            | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM768+A192KW               | TBD5    | ML-KEM-768  + AES192KW            | No          |
+| ML-KEM-768+A192KW             | TBD5    | ML-KEM-768  + AES192KW            | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM1024+A256KW              | TBD6    | ML-KEM-1024  + AES256KW           | No          |
+| ML-KEM-1024+A256KW            | TBD6    | ML-KEM-1024 + AES256KW            | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
 ~~~
 {: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
@@ -406,7 +406,7 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 The "OKP" (Octet Key Pair) key type, defined in {{!RFC8037}}, is used in this specification to represent PQC KEM keys for use in JOSE and COSE. 
 When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "OKP" represents a KEM key pair. The "crv" (subtype of key pair) parameter identifies the specific PQC KEM algorithm. The public key is carried in the "x" parameter. If a private key is included, it is represented using the "d" parameter. When expressed in JWK, all key parameters are base64url encoded.
 
-For ML-KEM algorithms, as specified in {{FIPS203}}, there are two possible representations of a private key: a seed and a fully expanded private key derived from the seed. This document specifies the use of only the seed form for private keys. To promote interoperability, this specification mandates that the "d" parameter MUST contain the 32-byte seed used to generate the ML-KEM key pair. It does not support the expanded private key representation defined by NIST. This approach ensures consistency with other PQC algorithm profiles, avoids ambiguity, and simplifies key management across JOSE and COSE.
+For ML-KEM algorithms, as specified in {{FIPS203}}, there are two possible representations of a private key: a seed and a fully expanded private key derived from the seed. This document specifies the use of only the seed form for private keys. To promote interoperability, this specification mandates that the "d" parameter MUST contain the 32-byte seed used to generate the ML-KEM key pair. It does not support the expanded private key representation defined by NIST. This approach ensures consistency with other PQC algorithms used in JOSE/COSE, and avoids ambiguity.
 
 Note: Although the "AKP" (Algorithm Key Pair) key type is defined in {{?I-D.ietf-cose-dilithium}} for representing post-quantum keys, it mandates the use of the "alg" parameter. While this works for PQ digital signatures, its use with PQ KEMs would require distinguishing between keys intended for Direct Key Agreement and Key Agreement with Key Wrap. This constraint introduces ambiguity in JOSE/COSE and is therefore not used in this specification.
 
@@ -420,7 +420,7 @@ PQC KEMs used in the manner described in this document MUST explicitly be design
 
 The following entries are added to the "JSON Web Signature and Encryption Algorithms" registry:
 
-- Algorithm Name: MLKEM512
+- Algorithm Name: ML-KEM-512
 - Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
@@ -428,7 +428,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM768
+- Algorithm Name: ML-KEM-768
 - Algorithm Description: PQ-KEM that uses ML-KEM-768 PQ-KEM.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
@@ -436,7 +436,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM1024
+- Algorithm Name: ML-KEM-1024
 - Algorithm Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
@@ -444,7 +444,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM512+A128KW
+- Algorithm Name: ML-KEM-512+A128KW
 - Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and CEK wrapped with "A128KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
@@ -452,7 +452,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM768+A192KW
+- Algorithm Name: ML-KEM-768+A192KW
 - Algorithm Description: PQ-KEM that uses ML-KEM-768 and CEK wrapped with "A192KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
@@ -460,7 +460,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-- Algorithm Name: MLKEM1024+A256KW
+- Algorithm Name: ML-KEM-1024+A256KW
 - Algorithm Description: PQ-KEM that uses ML-KEM-1024 and CEK wrapped with "A256KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
@@ -504,7 +504,7 @@ IANA is requested to register the following values in the "JSON Web Key Elliptic
 
 The following has to be added to the "COSE Algorithms" registry:
 
-- Name: MLKEM512
+- Name: ML-KEM-512
 - Value: TBD1
 - Description: PQ-KEM that uses ML-KEM-512 PQ-KEM.
 - Capabilities: [kty]
@@ -512,7 +512,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM768
+- Name: ML-KEM-768
 - Value: TBD2
 - Description: PQ-KEM that uses ML-KEM-768 PQ-KEM.
 - Capabilities: [kty]
@@ -520,7 +520,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM1024
+- Name: ML-KEM-768
 - Value: TBD3
 - Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM.
 - Capabilities: [kty]
@@ -528,7 +528,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM512+A128KW
+- Name: ML-KEM-512+A128KW
 - Value: TBD4
 - Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and CEK wrapped with "A128KW".
 - Capabilities: [kty]
@@ -536,7 +536,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM768+192KW
+- Name: ML-KEM-768+192KW
 - Value: TBD5
 - Description: PQ-KEM that uses ML-KEM-768 and CEK wrapped with "A192KW".
 - Capabilities: [kty]
@@ -544,7 +544,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Reference: This document (TBD)
 - Recommended: No
 
-- Name: MLKEM1024+A256KW
+- Name: ML-KEM-1024+A256KW
 - Value: TBD6
 - Description: PQ-KEM that uses ML-KEM-1024 and CEK wrapped with "A256KW".
 - Capabilities: [kty]
