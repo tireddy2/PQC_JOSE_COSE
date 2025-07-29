@@ -69,10 +69,6 @@ normative:
      target: https://www.iana.org/assignments/cose
 
 informative:
-  FIPS204:
-     title: "FIPS 203 (Initial Public Draft): Module-Lattice-based Key-Encapsulation Mechanism Standard"
-     target: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.ipd.pdf
-     date: false
  
   PQCAPI:
      title: "PQC - API notes"
@@ -175,7 +171,7 @@ At time of writing, NIST have standardized three PQC algorithms, with more expec
 
 ## ML-KEM
 
-ML-KEM offers several parameter sets with varying levels of security and performance trade-offs. This document specifies the use of the ML-KEM algorithm at three security levels: ML-KEM-512, ML-KEM-768, and ML-KEM-1024. ML-KEM key generation, encapsulation and decaspulation functions are defined in [FIPS204]. The main security property for KEMs standardized in the NIST Post-Quantum Cryptography Standardization Project is indistinguishability under adaptive chosen ciphertext attacks (IND-CCA2) (see Section 10.2 of {{?I-D.ietf-pquip-pqc-engineers}}). The public/private key sizes, ciphertext key size, and PQ security levels of ML-KEM are detailed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
+ML-KEM offers several parameter sets with varying levels of security and performance trade-offs. This document specifies the use of the ML-KEM algorithm at three security levels: ML-KEM-512, ML-KEM-768, and ML-KEM-1024. ML-KEM key generation, encapsulation and decaspulation functions are defined in {{FIPS203}}. The main security property for KEMs standardized in the NIST Post-Quantum Cryptography Standardization Project is indistinguishability under adaptive chosen ciphertext attacks (IND-CCA2) (see Section 10.2 of {{?I-D.ietf-pquip-pqc-engineers}}). The public/private key sizes, ciphertext key size, and PQ security levels of ML-KEM are detailed in Section 12 of {{?I-D.ietf-pquip-pqc-engineers}}.
 
 ## PQ-KEM Encapsulation {#encrypt}
 
@@ -227,12 +223,13 @@ The decapsulation process is as follows:
 
 ## Key Derivation for JOSE
 
-The key derivation for JOSE is performed using the KMAC defined in NIST SP 800-108r1-upd1 [SP-800-108r1]. The KMAC(K, X, L, S) parameters are instantiated as follows:
+The key derivation for JOSE is performed using the KMAC defined in NIST SP 800-108r1-upd1 {{SP-800-108r1}}. The KMAC(K, X, L, S) parameters are instantiated as follows:
 
    *  K: the input key-derivation key. In this document this is the initial shared secret (SS') outputted from the 
       kemEncaps() or kemDecaps() functions.
 
-   *  X: A subset of the JOSE context-specific data defined in Section 4.6.2 of {{RFC7518}}, i.e., concat(AlgorithmID, SuppPubInfo, SuppPrivInfo), is used. The fields PartyUInfo and PartyVInfo are excluded. PartyUInfo is omitted because sender authentication is not available in PQ KEMs. PartyVInfo is excluded because the recipient's identity is already bound to the public key used for encapsulation, making its inclusion redundant. If mutually known private information is to be included, both the sender and the recipient MUST agree out-of-band to include it as SuppPrivInfo in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. 
+   *  X: The context-specific data used for key derivation includes the concatenation of AlgorithmID, SuppPubInfo, and SuppPrivInfo, as defined in {{NIST.SP.800-56Ar3}}. The fields AlgorithmID and SuppPubInfo 
+   are defined in Section 4.6.2 of {{RFC7518}} The fields PartyUInfo and PartyVInfo, also defined in that section, are intentionally excluded. PartyUInfo is omitted because post-quantum KEMs do not support sender authentication. PartyVInfo is excluded because the recipient’s identity is already bound to the public key used for encapsulation, making its inclusion unnecessary. If mutually known private information is required, both parties MUST agree out-of-band to include it as SuppPrivInfo.
 
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
@@ -247,8 +244,8 @@ The key derivation for COSE is performed using the KMAC defined in NIST SP 800-1
    *  K: the input key-derivation key. In this document this is the initial shared secret (SS') outputted from the 
       kemEncaps() or kemDecaps() functions.
 
-   *  X: The context structure defined in Section 5.2 of [RFC9053] excluding PartyUInfo and PartyVInfo fields. PartyUInfo is omitted because sender authentication is not available in PQ KEMs. PartyVInfo is excluded because the recipient's identity is already bound to the public key used for encapsulation, making its inclusion redundant. If mutually known private information is to be included, both the sender and the recipient MUST agree out-of-band to include it as SuppPrivInfo in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. 
-  
+   *  X: The context structure defined in Section 5.2 of {{?RFC9053}} excluding PartyUInfo and PartyVInfo fields. PartyUInfo is omitted because sender authentication is not available in PQ KEMs. PartyVInfo is excluded because the recipient's identity is already bound to the public key used for encapsulation, making its inclusion redundant. If mutually known private information is to be included, both the sender and the recipient MUST agree out-of-band to include it as SuppPrivInfo in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. 
+   
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
    *  S: the optional customization label. In this document this parameter is unused, that is it is the zero-length string "".
@@ -395,11 +392,11 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 +-------------------------------+---------+-----------------------------------+-------------+
 | MLKEM1024                     | TBD3    | ML-KEM-1024                       | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM512+A128KW               | TBD4    | ML-KEM-512 + AES128KW             | No          |
+| MLKEM512+A128KW               | TBD4    | ML-KEM-512  + AES128KW            | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM768+A192KW               | TBD5    | ML-KEM-768 + AES192KW             | No          |
+| MLKEM768+A192KW               | TBD5    | ML-KEM-768  + AES192KW            | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
-| MLKEM1024+A256KW              | TBD6    | ML-KEM-1024 + AES256KW            | No          |
+| MLKEM1024+A256KW              | TBD6    | ML-KEM-1024  + AES256KW           | No          |
 +-------------------------------+---------+-----------------------------------+-------------+
 ~~~
 {: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
@@ -408,6 +405,8 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 
 The "OKP" (Octet Key Pair) key type, defined in {{!RFC8037}}, is used in this specification to represent PQC KEM keys for use in JOSE and COSE. 
 When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "OKP" represents a KEM key pair. The "crv" (subtype of key pair) parameter identifies the specific PQC KEM algorithm. The public key is carried in the "x" parameter. If a private key is included, it is represented using the "d" parameter. When expressed in JWK, all key parameters are base64url encoded.
+
+For ML-KEM algorithms, as specified in {{FIPS203}}, there are two possible representations of a private key: a seed and a fully expanded private key derived from the seed. This document specifies the use of only the seed form for private keys. To promote interoperability, this specification mandates that the "d" parameter MUST contain the 32-byte seed used to generate the ML-KEM key pair. It does not support the expanded private key representation defined by NIST. This approach ensures consistency with other PQC algorithm profiles, avoids ambiguity, and simplifies key management across JOSE and COSE.
 
 Note: Although the "AKP" (Algorithm Key Pair) key type is defined in {{?I-D.ietf-cose-dilithium}} for representing post-quantum keys, it mandates the use of the "alg" parameter. While this works for PQ digital signatures, its use with PQ KEMs would require distinguishing between keys intended for Direct Key Agreement and Key Agreement with Key Wrap. This constraint introduces ambiguity in JOSE/COSE and is therefore not used in this specification.
 
