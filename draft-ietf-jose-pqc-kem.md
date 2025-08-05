@@ -275,6 +275,8 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 
 *  The JWE Encrypted Key MUST be absent.
 
+Note that when using Direct Key Agreement in JOSE Compact Serialization, inefficiency arises due to double encoding of the KEM ciphertext. In this mode, the "epk" parameter inside the protected header carries the KEM ciphertext, already base64url-encoded. Then, the entire protected header is base64url-encoded again as part of the compact serialization. 
+
 ## Key Agreement with Key Wrapping
 
 * The derived key is generated using the process explained in {{encrypt}} and used to encrypt the CEK. 
