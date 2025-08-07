@@ -594,4 +594,5 @@ IANA is requested to register the following values in the "COSE Elliptic Curves"
 # Acknowledgments
 {: numbered="false"}
 
-Thanks to Ilari Liusvaara, Neil Madden and AJITOMI Daisuke for the discussion and comments.
+The authors thank AJITOMI Daisuke, Brian Campbell, Daniel Huigens, Filip Skokan, Ilari Liusvaara, Neil Madden, 
+and Stepan Yakimovich for their contributions to this specification.
