@@ -403,14 +403,17 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 ~~~
 {: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
 
-# Use of OKP Key Type for PQC KEM Keys in JOSE and COSE
+# Use of AKP Key Type for PQC KEM Keys in JOSE and COSE
 
-The "OKP" (Octet Key Pair) key type, defined in {{!RFC8037}}, is used in this specification to represent PQC KEM keys for use in JOSE and COSE. 
-When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "OKP" represents a KEM key pair. The "crv" (subtype of key pair) parameter identifies the specific PQC KEM algorithm. The public key is carried in the "x" parameter. If a private key is included, it is represented using the "d" parameter. When expressed in JWK, all key parameters are base64url encoded.
+The "AKP" (Algorithm Key Pair) key type, defined in {{?I-D.ietf-cose-dilithium}} is used in this specification to
+represent PQC KEM keys for JOSE and COSE. When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "AKP" represents an PQC KEM key pair. The public key is carried in the "pub" parameter. If included, the private key is carried in the "priv" parameter. When expressed as a JWK, the "pub" and "priv" values are base64url-encoded.
 
-For ML-KEM algorithms, as specified in {{FIPS203}}, there are two possible representations of a private key: a seed and a fully expanded private key derived from the seed. This document specifies the use of only the seed form for private keys. To promote interoperability, this specification mandates that the "d" parameter MUST contain the 32-byte seed used to generate the ML-KEM key pair. It does not support the expanded private key representation defined by NIST. This approach ensures consistency with other PQC algorithms used in JOSE/COSE, and avoids ambiguity.
+The "AKP" key type mandates the use of the "alg" parameter. While this requirement is suitable for PQ digital signature algorithms, applying the same model to PQ KEMs would require distinguishing between keys used
+for Direct Key Agreement and those used for Key Agreement with Key Wrap.
 
-Note: Although the "AKP" (Algorithm Key Pair) key type is defined in {{?I-D.ietf-cose-dilithium}} for representing post-quantum keys, it mandates the use of the "alg" parameter. While this works for PQ digital signatures, its use with PQ KEMs would require distinguishing between keys intended for Direct Key Agreement and Key Agreement with Key Wrap. This constraint introduces ambiguity in JOSE/COSE and is therefore not used in this specification.
+Note: This differs from the "OKP" usage model and requires further discussion within the WG.
+
+For ML-KEM algorithms, as specified in {{FIPS203}}, there are two possible representations of a private key: a seed and a fully expanded private key derived from the seed. This document specifies the use of only the seed form for private keys. To promote interoperability, this specification mandates that the "priv" parameter MUST contain the 32-byte seed used to generate the ML-KEM key pair. It does not support the expanded private key representation defined by NIST. This approach ensures consistency with other PQC algorithms used in JOSE/COSE, and avoids ambiguity.
 
 # Security Considerations
 
@@ -563,7 +566,7 @@ IANA is requested to register the following values in the "COSE Elliptic Curves"
 | Name             | ML-KEM-512                                                              |
 |------------------|-------------------------------------------------------------------------|
 | Value            | TBD2                                                                    |
-| Key Type         | OKP                                                                     |
+| Key Type         | AKP                                                                     |
 | Description      | NIST Post-Quantum ML-KEM-512 |
 | Change Controller| IESG                                                                    |
 | Reference        | This document                                                           |
@@ -574,7 +577,7 @@ IANA is requested to register the following values in the "COSE Elliptic Curves"
 | Name             | ML-KEM-768                                                              |
 |------------------|-------------------------------------------------------------------------|
 | Value            | TBD2                                                                    |
-| Key Type         | OKP                                                                     |
+| Key Type         | AKP                                                                     |
 | Description      | NIST Post-Quantum ML-KEM-768 |
 | Change Controller| IESG                                                                    |
 | Reference        | This document                                                           |
@@ -585,7 +588,7 @@ IANA is requested to register the following values in the "COSE Elliptic Curves"
 | Name             | ML-KEM-1024                                                             |
 |------------------|-------------------------------------------------------------------------|
 | Value            | TBD3                                                                   |
-| Key Type         | OKP                                                                     |
+| Key Type         | AKP                                                                     |
 | Description      | NIST Post-Quantum ML-KEM-1024 |
 | Change Controller| IESG                                                                    |
 | Reference        | This document                                                           |
