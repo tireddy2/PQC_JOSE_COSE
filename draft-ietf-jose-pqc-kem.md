@@ -233,7 +233,8 @@ The key derivation for JOSE is performed using the KMAC defined in NIST SP 800-1
 
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
-   *  S: the optional customization label. In this document this parameter is unused, that is it is the zero-length string "".
+   *  S: the optional customization label. In this document this parameter is unused, that is it is the string
+   "JOSE KDF".
 
 For all security levels of ML-KEM, KMAC256 is used.
 
@@ -248,7 +249,7 @@ The key derivation for COSE is performed using the KMAC defined in NIST SP 800-1
    
    *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
 
-   *  S: the optional customization label. In this document this parameter is unused, that is it is the zero-length string "".
+   *  S: the optional customization label. In this document this parameter is unused, that is it is the string "COSE KDF".
 
 For all security levels of ML-KEM, KMAC256 is used.
 
@@ -409,9 +410,15 @@ The "AKP" (Algorithm Key Pair) key type, defined in {{?I-D.ietf-cose-dilithium}}
 represent PQC KEM keys for JOSE and COSE. When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "AKP" represents an PQC KEM key pair. The public key is carried in the "pub" parameter. If included, the private key is carried in the "priv" parameter. When expressed as a JWK, the "pub" and "priv" values are base64url-encoded.
 
 The "AKP" key type mandates the use of the "alg" parameter. While this requirement is suitable for PQ digital signature algorithms, applying the same model to PQ KEMs would require distinguishing between keys used
-for Direct Key Agreement and those used for Key Agreement with Key Wrap.
+for Direct Key Agreement and those used for Key Agreement with Key Wrap. This specification updates the use of the "alg" parameter to be optional for the "AKP" key type when used for PQ KEMs.
 
-Note: This differs from the "OKP" usage model and requires further discussion within the WG.
+Using distinct "alg" values provides unambiguous identification of how the key is to be used and prevents accidental misuse across Direct Key Agreement and Key Agreement with Key Wrap modes.
+
+However, requiring "alg" also introduces trade-offs:
+
+* It reduces algorithm agility, since a stored key is bound to a specific mode.
+* It couples storage with operational policy, embedding runtime behavior into the key representation rather than leaving it to higher-layer protocol logic.
+* It limits re-use of the same key material across compatible modes, increasing management complexity.
 
 For ML-KEM algorithms, as specified in {{FIPS203}}, there are two possible representations of a private key: a seed and a fully expanded private key derived from the seed. This document specifies the use of only the seed form for private keys. To promote interoperability, this specification mandates that the "priv" parameter MUST contain the 32-byte seed used to generate the ML-KEM key pair. It does not support the expanded private key representation defined by NIST. This approach ensures consistency with other PQC algorithms used in JOSE/COSE, and avoids ambiguity.
 
