@@ -72,7 +72,7 @@ normative:
      target: https://www.iana.org/assignments/cose
 
 informative:
- 
+  RFC8126:
   PQCAPI:
      title: "PQC - API notes"
      target: https://csrc.nist.gov/CSRC/media/Projects/Post-Quantum-Cryptography/documents/example-files/api-notes.pdf
@@ -417,18 +417,32 @@ for PQC KEM algorithms, such as ML-KEM {{FIPS203}}.
 | Name | JSON Type | Description |
 |------|------------|-------------|
 | kty | string | MUST be "KEM". Identifies a PQC KEM key. |
-| alg | string | Identifies the KEM algorithm (for example,"ML-KEM-512", "ML-KEM-768", or "ML-KEM-1024"). |
+| kem_params | string | Identifies the specific KEM algorithm parameter set (for example, `"ML-KEM-512"`, "ML-KEM-768"). |
+| alg | string | When present, it identifies the JOSE algorithm intended for use with the key (for example, `"ML-KEM-768+A256KW"`). |
 | pub | string | Contains the public key as defined by the algorithm specification. |
-| priv | string | Contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in [FIPS203]). |
+| priv | string | Contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in {{FIPS203}}). |
 
 ## COSE (COSE_Key) Parameters
 
 | Name | Label | CBOR Type | Description |
 |------|--------|-----------|-------------|
 | kty | 1 | tstr | MUST be `"KEM"`. Identifies a PQC KEM key. |
-| alg | 3 | int | Identifies the KEM algorithm (for example,"ML-KEM-512", "ML-KEM-768", or "ML-KEM-1024"). |
+| kem_params | TBD10 | int | Identifies the specific KEM algorithm parameter set (for example, `"ML-KEM-512"`, "ML-KEM-768"). |
+| alg | 3 | int | When present, it identifies the COSE algorithm intended for use with the key (for example, `"ML-KEM-768+A256KW"`). |
 | pub | -1 | bstr | Contains the public key as defined by the algorithm specification. |
-| priv | -2 | bstr | Contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in [FIPS203]). |
+| priv | -2 | bstr | Contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in {{FIPS203}}). |
+
+## "kem_params" (KEM parameter set) 
+
+The `"kem_params"` member identifies the specific PQC KEM algorithm and parameter set associated
+with the key. This member is REQUIRED for all "KEM" keys in both JOSE (JWK) and 
+COSE (COSE_Key) representations. 
+
+The "kem_params" identifies the specific post-quantum KEM algorithm parameter set associated with the key. It
+ensures that a "KEM" key is self-describing and bound to a single PQC KEM algorithm and parameter set.
+
+Future PQC KEM algorithms can register additional "kem_params"
+values under a new IANA registry.
 
 ## Private Key Representation
 
@@ -489,7 +503,7 @@ The JWK Thumbprint is computed according to the process described in
 Section 3 of {{RFC7638}}, using the following members in lexicographic
 order by member name:
 
-1. "alg"
+1. "kem_params"
 2. "kty"
 3. "pub"
 
@@ -498,9 +512,9 @@ order by member name:
 When computing the COSE Key Thumbprint as described in {{RFC9679}}, the
 required parameters for algorithm key pairs are:
 
-*  "kty" (label: 1, data type: int, value: TBD)
+* "kem_params" (label: TBD, data type: int, value: int)
 
-*  "alg" (label: 3, data type: int, value: int)
+*  "kty" (label: 1, data type: int, value: TBD10)
 
 *  "pub" (label: -1, value: bstr)
 
@@ -619,6 +633,16 @@ The following completed registration is provided as described in [RFC7518] and [
 IANA is requested to add the following entries to the JSON Web Key Parameters Registry.  
 The following completed registrations are provided as described in {{RFC7517}} and {{RFC7638}}.
 
+#### KEM Parameter Set
+
+* Parameter Name: kem_params
+* Parameter Description: Identifies the specific KEM algorithm parameter set
+  (for example, "ML-KEM-512", "ML-KEM-768", or "ML-KEM-1024").
+* Used with "kty" Value(s): KEM
+* Parameter Information Class: Public
+* Change Controller: IETF
+* Specification Document(s): RFC XXXX
+
 #### KEM Public Key
 
 * Parameter Name: pub
@@ -648,6 +672,35 @@ The following completed registrations are provided as described in {{RFC7517}} a
 * Change Controller: IETF
 
 * Specification Document(s): RFC XXXX
+
+### JSON Web Key KEM Parameter Sets
+
+IANA is requested to create a new registry titled: "JSON Web Key PQC KEM Parameter Sets"
+
+This registry lists identifiers used in the "kem_params" field of "KEM" JWKs.
+Each value identifies a specific, fully specified post-quantum KEM algorithm and
+parameter set.
+
+#### Registration Template
+
+Each entry in this registry MUST include the following fields:
+
+* Parameter Set Name: The string value used for "kem_params".
+* Description: A short description of the algorithm and parameter set.
+* Specification Document(s): Reference to the defining specification.
+* Change Controller: IETF.
+
+#### Initial Contents
+
+| Parameter Set Name | Description | Specification Document(s) |
+|--------------------|-------------|----------------------------|
+| ML-KEM-512 | ML-KEM with 512-bit parameter set | {{FIPS203}} |
+| ML-KEM-768 | ML-KEM with 768-bit parameter set | {{FIPS203}} |
+| ML-KEM-1024 | ML-KEM with 1024-bit parameter set | {{FIPS203}} |
+
+New entries in this registry are subject to the "Specification Required" policy
+as defined in {{RFC8126}}.
+
 ## COSE Algorithms
 
 The following has to be added to the "COSE Algorithms" registry:
@@ -745,9 +798,9 @@ The following completed registration template is provided as described in {{RFC9
 ### KEM
 
 * Name: KEM  
-* Value: TBD 
+* Value: TBD10 
 * Description: COSE Key Type for PQC KEMs.  
-* Capabilities: [kty(TBD)]  
+* Capabilities: [kty(TBD10)]  
 * Change Controller: IETF  
 * Reference: RFC XXXX
 
@@ -756,9 +809,19 @@ The following completed registration template is provided as described in {{RFC9
 IANA is requested to add the following entries to the "COSE Key Type Parameters" registry.  
 The following completed registration templates are provided as described in {{RFC9053}}.
 
+### KEM Parameter Set
+
+* Key Type: KEM
+* Name: kem_params
+* Label: TBD11
+* CBOR Type: tstr
+* Description: Identifies the specific KEM algorithm parameter set
+  (for example, "ML-KEM-512", "ML-KEM-768", or "ML-KEM-1024").
+* Reference: RFC XXXX
+
 ### KEM Public Key
 
-* Key Type: TBD  
+* Key Type: KEM  
 * Name: pub  
 * Label: -1  
 * CBOR Type: bstr  
@@ -767,12 +830,40 @@ The following completed registration templates are provided as described in {{RF
 
 ### KEM Private Key
 
-* Key Type: TBD 
+* Key Type: KEM 
 * Name: priv  
 * Label: -2  
 * CBOR Type: bstr  
 * Description: Private key seed used to generate the KEM key pair (32 bytes for ML-KEM as defined in {{FIPS203}}).  
 * Reference: RFC XXXX
+
+## COSE KEM Parameter Sets
+
+IANA is requested to create a new registry titled: "COSE Key KEM Parameter Sets"
+
+This registry lists identifiers used in the "kem_params" field of "KEM"
+COSE_Key objects. Each value identifies a specific, fully specified
+post-quantum KEM algorithm and parameter set.
+
+#### Registration Template
+
+Each entry in this registry MUST include the following fields:
+
+* Parameter Set Value: Integer label used in the "kem_params" field.
+* Description: A short description of the algorithm and parameter set.
+* Specification Document(s): Reference to the defining specification.
+* Change Controller: IETF.
+
+#### Initial Contents
+
+| Parameter Set Value| Description | Specification Document(s) |
+|--------------------|-------------|----------------------------|
+| TBD12 | ML-KEM with 512-bit parameter set | {{FIPS203}} |
+| TBD13 | ML-KEM with 768-bit parameter set | {{FIPS203}} |
+| TBD14 | ML-KEM with 1024-bit parameter set | {{FIPS203}} |
+
+New entries in this registry are subject to the "Specification Required" policy
+as defined in {{RFC8126}}.
 
 # Acknowledgments
 {: numbered="false"}
