@@ -411,14 +411,23 @@ This document defines a new key type for use with PQC KEMs in JOSE and COSE. The
 key type provides a representation of public and private key pairs used
 for PQC KEM algorithms, such as ML-KEM {{FIPS203}}.
 
-## Parameters
+## JOSE (JSON Web Key) Parameters
 
-| Name | JSON Type | COSE Label | Description |
-|------|------------|-------------|--------------|
-| kty | string | 1 | MUST be "KEM". Identifies a PQC KEM key. |
-| alg | string / int | 3 |  Identifies the KEM algorithm (e.g., "ML-KEM-512", "ML-KEM-768", "ML-KEM-1024"). When omitted, the key MAY be used with multiple algorithms that are compatible with the same key format (for example, "ML-KEM-768" and "ML-KEM-768+A256KW"). |
-| pub | string / bstr | -2 | Contains the public key as defined by the algorithm specification. |
-| priv | string / bstr | -4 | Contains the private key seed as defined below. |
+| Name | JSON Type | Description |
+|------|------------|-------------|
+| kty | string | MUST be "KEM". Identifies a PQC KEM key. |
+| alg | string | Identifies the KEM algorithm (for example,"ML-KEM-512", "ML-KEM-768", or "ML-KEM-1024"). |
+| pub | string | Contains the public key as defined by the algorithm specification. |
+| priv | string | Contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in [FIPS203]). |
+
+## COSE (COSE_Key) Parameters
+
+| Name | Label | CBOR Type | Description |
+|------|--------|-----------|-------------|
+| kty | 1 | tstr | MUST be `"KEM"`. Identifies a PQC KEM key. |
+| alg | 3 | int | Identifies the KEM algorithm (for example,"ML-KEM-512", "ML-KEM-768", or "ML-KEM-1024"). |
+| pub | -1 | bstr | Contains the public key as defined by the algorithm specification. |
+| priv | -2 | bstr | Contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in [FIPS203]). |
 
 ## Private Key Representation
 
@@ -428,7 +437,12 @@ To promote interoperability, this specification mandates that the "priv" paramet
 
 ## Algorithm Binding and Flexibility
 
-The "alg" parameter is  to allow flexibility in using the same key
+The "alg" (Algorithm) parameter, as defined in {{RFC7517}}, identifies the
+algorithm intended for use with the key. When `"kty"` is `"KEM"`, the `"alg"`
+value will correspond to one of the algorithms defined in this specification, 
+or to any future PQC KEM algorithm that follows the same structure.
+
+The "alg" parameter is to allow flexibility in using the same key
 pair for multiple algorithm variants that share the same key structure. This is
 useful, for example, when the same ML-KEM key pair is used with both:
 
@@ -458,6 +472,39 @@ assumptions are incompatible.
   "pub": "8GQOjk8fT3F4l8n5E2aG7v5K9P...",
   "priv": "3f4d672b8cba0f12..."
 }
+
+# Thumbprint Calculation for "KEM" Keys
+
+Although this document specifies how to represent ML-KEM keys using
+KEM, the KEM key type and thumbprint computations are suitable for
+use with PQC KEM algorithms other than ML-kEM.
+
+Only the public key parameters are included in the thumbprint
+calculation. 
+
+## JWK Thumbprint
+
+The JWK Thumbprint is computed according to the process described in
+Section 3 of {{RFC7638}}, using the following members in lexicographic
+order by member name:
+
+1. "alg"
+2. "kty"
+3. "pub"
+
+## COSE_Key Thumbprint
+
+When computing the COSE Key Thumbprint as described in {{RFC9679}}, the
+required parameters for algorithm key pairs are:
+
+*  "kty" (label: 1, data type: int, value: TBD)
+
+*  "alg" (label: 3, data type: int, value: int)
+
+*  "pub" (label: -1, value: bstr)
+
+The COSE Key Thumbprint is produced according to the process
+described in Section 3 of {{RFC9679}}.
 
 # Security Considerations
 
@@ -517,9 +564,9 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-## JSON Web Key Elliptic Curves Registrations
+## JSON Web Signature and Encryption Algorithms Registrations
 
-IANA is requested to register the following values in the "JSON Web Key Elliptic Curve" registry {{JOSE-IANA-Curves}}.
+IANA is requested to register the following values in the "JSON Web Signature and Encryption Algorithms Registrations" registry {{JOSE-IANA-Curves}}.
 
 ### ML-KEM-512
 
@@ -600,21 +647,6 @@ The following completed registrations are provided as described in {{RFC7517}} a
 * Change Controller: IETF
 
 * Specification Document(s): RFC XXXX
-
-#### KEM Algorithm Identifier
-
-Parameter Name: alg 
-
-* Parameter Description: Identifies the algorithm associated with the KEM key pair.  
-
-* Used with "kty" Value(s): KEM
-
-* Parameter Information Class: Public
-
-* Change Controller: IETF
-
-* Specification Document(s): RFC XXXX
-
 ## COSE Algorithms
 
 The following has to be added to the "COSE Algorithms" registry:
@@ -739,15 +771,6 @@ The following completed registration templates are provided as described in {{RF
 * Label: -2  
 * CBOR Type: bstr  
 * Description: Private key seed used to generate the KEM key pair (32 bytes for ML-KEM as defined in {{FIPS203}}).  
-* Reference: RFC XXXX
-
-### KEM Algorithm Identifier 
-
-* Key Type: TBD 
-* Name: alg  
-* Label: 3  
-* CBOR Type: tstr / int  
-* Description: Identifies the specific KEM algorithm (e.g., `"ML-KEM-512"`, `"ML-KEM-768"`, `"ML-KEM-1024"`).  
 * Reference: RFC XXXX
 
 # Acknowledgments
