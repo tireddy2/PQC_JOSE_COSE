@@ -420,17 +420,17 @@ for PQC KEM algorithms, such as ML-KEM {{FIPS203}}.
 | kem_params | string | Identifies the specific KEM algorithm parameter set (for example, `"ML-KEM-512"`, "ML-KEM-768"). |
 | alg | string | When present, it identifies the JOSE algorithm intended for use with the key (for example, `"ML-KEM-768+A256KW"`). |
 | pub | string | Contains the public key as defined by the algorithm specification. |
-| priv | string | Contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in {{FIPS203}}). |
+| priv | string | When present, it contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in {{FIPS203}}). |
 
 ## COSE (COSE_Key) Parameters
 
 | Name | Label | CBOR Type | Description |
 |------|--------|-----------|-------------|
 | kty | 1 | tstr | MUST be `"KEM"`. Identifies a PQC KEM key. |
-| kem_params | TBD10 | int | Identifies the specific KEM algorithm parameter set (for example, `"ML-KEM-512"`, "ML-KEM-768"). |
+| kem_params | TBD11 | int | Identifies the specific KEM algorithm parameter set (for example, `"ML-KEM-512"`, "ML-KEM-768"). |
 | alg | 3 | int | When present, it identifies the COSE algorithm intended for use with the key (for example, `"ML-KEM-768+A256KW"`). |
 | pub | -1 | bstr | Contains the public key as defined by the algorithm specification. |
-| priv | -2 | bstr | Contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in {{FIPS203}}). |
+| priv | -2 | bstr | When present, it contains the private key seed used to generate the key pair (32 bytes for ML-KEM as defined in {{FIPS203}}). |
 
 ## "kem_params" (KEM parameter set) 
 
@@ -512,7 +512,7 @@ order by member name:
 When computing the COSE Key Thumbprint as described in {{RFC9679}}, the
 required parameters for algorithm key pairs are:
 
-* "kem_params" (label: TBD, data type: int, value: int)
+* "kem_params" (label: TBD11, data type: int, value: int)
 
 *  "kty" (label: 1, data type: int, value: TBD10)
 
