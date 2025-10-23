@@ -48,6 +48,8 @@ author:
     email: "hannes.tschofenig@gmx.net"
  
 normative:
+  RFC7517:
+  RFC7638:
   RFC2119:
   RFC8174:
   RFC7516:
@@ -403,17 +405,59 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 ~~~
 {: #mapping-table title="Mapping between JOSE and COSE PQ-KEM Ciphersuites."}
 
-# Use of AKP Key Type for PQC KEM Keys in JOSE and COSE
+# The "KEM" Key Type
 
-The "AKP" (Algorithm Key Pair) key type, defined in {{?I-D.ietf-cose-dilithium}} is used in this specification to
-represent PQC KEM keys for JOSE and COSE. When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "AKP" represents an PQC KEM key pair. The public key is carried in the "pub" parameter. If included, the private key is carried in the "priv" parameter. When expressed as a JWK, the "pub" and "priv" values are base64url-encoded.
+This document defines a new key type for use with PQC KEMs in JOSE and COSE. The "KEM"
+key type provides a representation of public and private key pairs used
+for PQC KEM algorithms, such as ML-KEM {{FIPS203}}.
 
-The "AKP" key type mandates the use of the "alg" parameter. While this requirement is suitable for PQ digital signature algorithms, applying the same model to PQ KEMs would require distinguishing between keys used
-for Direct Key Agreement and those used for Key Agreement with Key Wrap.
+## Parameters
 
-Note: This differs from the "OKP" usage model and requires further discussion within the WG.
+| Name | JSON Type | COSE Label | Description |
+|------|------------|-------------|--------------|
+| kty | string | 1 | MUST be "KEM". Identifies a PQC KEM key. |
+| alg | string / int | 3 |  Identifies the KEM algorithm (e.g., "ML-KEM-512", "ML-KEM-768", "ML-KEM-1024"). When omitted, the key MAY be used with multiple algorithms that are compatible with the same key format (for example, "ML-KEM-768" and "ML-KEM-768+A256KW"). |
+| pub | string / bstr | -2 | Contains the public key as defined by the algorithm specification. |
+| priv | string / bstr | -4 | Contains the private key seed as defined below. |
 
-For ML-KEM algorithms, as specified in {{FIPS203}}, there are two possible representations of a private key: a seed and a fully expanded private key derived from the seed. This document specifies the use of only the seed form for private keys. To promote interoperability, this specification mandates that the "priv" parameter MUST contain the 32-byte seed used to generate the ML-KEM key pair. It does not support the expanded private key representation defined by NIST. This approach ensures consistency with other PQC algorithms used in JOSE/COSE, and avoids ambiguity.
+## Private Key Representation
+
+For ML-KEM algorithms, as specified in {{FIPS203}}, there are two possible representations of a private key: a seed and a fully expanded private key derived from the seed. This document specifies the use of only the seed form for private keys. 
+
+To promote interoperability, this specification mandates that the "priv" parameter MUST contain the 32-byte seed used to generate the ML-KEM key pair. It does not support the expanded private key representation defined by NIST. This approach ensures consistency with other PQC algorithms used in JOSE/COSE, and avoids ambiguity.
+
+## Algorithm Binding and Flexibility
+
+The "alg" parameter is  to allow flexibility in using the same key
+pair for multiple algorithm variants that share the same key structure. This is
+useful, for example, when the same ML-KEM key pair is used with both:
+
+* Direct Key Agreement (alg = "ML-KEM-768")
+* Key Agreement with Key Wrap (alg = "ML-KEM-768+A256KW")
+
+This behavior is similar to the "OKP" key type defined in {{RFC8037}}. 
+
+The "alg" parameter can also be used to restrict a key to a specific
+key management mode. For example, a key with "alg" set to "ML-KEM-768"
+MUST NOT be used for key wrap operations. This allows applications to
+enforce clear usage boundaries and avoid weaker recipient attacks,
+which occur when a message encrypted for multiple recipients could be
+compromised through a recipient using a weaker algorithm. However, such
+restriction is not required if the sender enforces its algorithm policy
+and uses only permitted algorithms and encryption modes.
+
+Implementations MUST NOT use the same key pair across unrelated algorithm 
+families (e.g., ML-KEM and HQC), as their key structures and security
+assumptions are incompatible.
+
+## Example (JOSE JWK)
+
+```json
+{
+  "kty": "KEM",
+  "pub": "8GQOjk8fT3F4l8n5E2aG7v5K9P...",
+  "priv": "3f4d672b8cba0f12..."
+}
 
 # Security Considerations
 
@@ -421,7 +465,7 @@ PQC KEMs used in the manner described in this document MUST explicitly be design
 
 # IANA Considerations {#IANA}
 
-## JOSE
+## JSON Web Signature and Encryption Algorithms
 
 The following entries are added to the "JSON Web Signature and Encryption Algorithms" registry:
 
@@ -473,11 +517,11 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-### JSON Web Key Elliptic Curves Registrations
+## JSON Web Key Elliptic Curves Registrations
 
 IANA is requested to register the following values in the "JSON Web Key Elliptic Curve" registry {{JOSE-IANA-Curves}}.
 
-## ML-KEM-512
+### ML-KEM-512
 
 | Curve Name              | ML-KEM-512                                                              |
 |-------------------------|-------------------------------------------------------------------------|
@@ -486,7 +530,7 @@ IANA is requested to register the following values in the "JSON Web Key Elliptic
 | Change Controller       | IESG                                                                   |
 | Specification Document(s) | This document   
 
-## ML-KEM-768
+### ML-KEM-768
 
 | Curve Name              | ML-KEM-768                                                              |
 |-------------------------|-------------------------------------------------------------------------|
@@ -495,7 +539,7 @@ IANA is requested to register the following values in the "JSON Web Key Elliptic
 | Change Controller       | IESG                                                                   |
 | Specification Document(s) | This document                                                       |
 
-## ML-KEM-1024
+### ML-KEM-1024
 
 | Curve Name              | ML-KEM-1024                                                             |
 |-------------------------|-------------------------------------------------------------------------|
@@ -504,8 +548,74 @@ IANA is requested to register the following values in the "JSON Web Key Elliptic
 | Change Controller       | IESG                                                                   |
 | Specification Document(s) | This document                                                       |
 
+## New JOSE Key Types
 
-## COSE
+IANA is requested to add the following entry to the JSON Web Key Types Registry.  
+The following completed registration is provided as described in [RFC7518] and [RFC7638].
+
+### KEM
+
+* "kty" Parameter Value: KEM
+
+* Key Type Description: Key Encapsulation Mechanism key type for PQC KEM algorithms.  
+
+* JOSE Implementation Requirements: Optional
+
+* Change Controller: IETF
+
+* Specification Document(s): RFC XXXX
+
+
+### New JSON Web Key Parameters
+
+IANA is requested to add the following entries to the JSON Web Key Parameters Registry.  
+The following completed registrations are provided as described in {{RFC7517}} and {{RFC7638}}.
+
+#### KEM Public Key
+
+* Parameter Name: pub
+
+* Parameter Description: Public key as defined by the algorithm specification.
+
+* Used with "kty" Value(s): KEM
+
+* Parameter Information Class: Public
+
+* Change Controller: IETF
+
+* Specification Document(s): RFC XXXX
+
+
+#### KEM Private Key
+
+* Parameter Name: priv
+
+* Parameter Description: Private key seed used to generate the KEM key pair  
+  (32 bytes for ML-KEM as defined in {{FIPS203}}).
+
+* Used with "kty" Value(s): KEM
+
+* Parameter Information Class: Private
+
+* Change Controller: IETF
+
+* Specification Document(s): RFC XXXX
+
+#### KEM Algorithm Identifier
+
+Parameter Name: alg 
+
+* Parameter Description: Identifies the algorithm associated with the KEM key pair.  
+
+* Used with "kty" Value(s): KEM
+
+* Parameter Information Class: Public
+
+* Change Controller: IETF
+
+* Specification Document(s): RFC XXXX
+
+## COSE Algorithms
 
 The following has to be added to the "COSE Algorithms" registry:
 
@@ -557,11 +667,11 @@ The following has to be added to the "COSE Algorithms" registry:
 - Reference: This document (TBD)
 - Recommended: No
 
-# COSE Elliptic Curves Registrations
+## COSE Elliptic Curves Registrations
 
 IANA is requested to register the following values in the "COSE Elliptic Curves" registry {{COSE-IANA-Curves}}.
 
-## ML-KEM-512
+### ML-KEM-512
 
 | Name             | ML-KEM-512                                                              |
 |------------------|-------------------------------------------------------------------------|
@@ -572,7 +682,7 @@ IANA is requested to register the following values in the "COSE Elliptic Curves"
 | Reference        | This document                                                           |
 | Recommended      | No 
 
-## ML-KEM-768
+### ML-KEM-768
 
 | Name             | ML-KEM-768                                                              |
 |------------------|-------------------------------------------------------------------------|
@@ -583,16 +693,62 @@ IANA is requested to register the following values in the "COSE Elliptic Curves"
 | Reference        | This document                                                           |
 | Recommended      | No                                                                      |
 
-## ML-KEM-1024
+### ML-KEM-1024
 
 | Name             | ML-KEM-1024                                                             |
 |------------------|-------------------------------------------------------------------------|
-| Value            | TBD3                                                                   |
+| Value            | TBD3                                                                    |
 | Key Type         | AKP                                                                     |
-| Description      | NIST Post-Quantum ML-KEM-1024 |
+| Description      | NIST Post-Quantum ML-KEM-1024                                           |
 | Change Controller| IESG                                                                    |
 | Reference        | This document                                                           |
 | Recommended      | No                                                                      |
+
+## New COSE Key Types
+
+IANA is requested to add the following entry to the "COSE Key Types" registry.  
+The following completed registration template is provided as described in {{RFC9053}}.
+
+### KEM
+
+* Name: KEM  
+* Value: TBD 
+* Description: COSE Key Type for PQC KEMs.  
+* Capabilities: [kty(TBD)]  
+* Change Controller: IETF  
+* Reference: RFC XXXX
+
+## New COSE Key Type Parameters
+
+IANA is requested to add the following entries to the "COSE Key Type Parameters" registry.  
+The following completed registration templates are provided as described in {{RFC9053}}.
+
+### KEM Public Key
+
+* Key Type: TBD  
+* Name: pub  
+* Label: -1  
+* CBOR Type: bstr  
+* Description: Public key as defined by the PQC KEM algorithm specification (e.g., ML-KEM).  
+* Reference:** RFC XXXX
+
+### KEM Private Key
+
+* Key Type: TBD 
+* Name: priv  
+* Label: -2  
+* CBOR Type: bstr  
+* Description: Private key seed used to generate the KEM key pair (32 bytes for ML-KEM as defined in {{FIPS203}}).  
+* Reference: RFC XXXX
+
+### KEM Algorithm Identifier 
+
+* Key Type: TBD 
+* Name: alg  
+* Label: 3  
+* CBOR Type: tstr / int  
+* Description: Identifies the specific KEM algorithm (e.g., `"ML-KEM-512"`, `"ML-KEM-768"`, `"ML-KEM-1024"`).  
+* Reference: RFC XXXX
 
 # Acknowledgments
 {: numbered="false"}
