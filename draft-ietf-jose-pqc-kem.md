@@ -54,6 +54,7 @@ normative:
   RFC8174:
   RFC7516:
   RFC8949:
+  RFC9679:
   JOSE-IANA:
      author:
         org: IANA
@@ -438,7 +439,7 @@ To promote interoperability, this specification mandates that the "priv" paramet
 ## Algorithm Binding and Flexibility
 
 The "alg" (Algorithm) parameter, as defined in {{RFC7517}}, identifies the
-algorithm intended for use with the key. When `"kty"` is `"KEM"`, the `"alg"`
+algorithm intended for use with the key. When "kty" is "KEM", the "alg"
 value will correspond to one of the algorithms defined in this specification, 
 or to any future PQC KEM algorithm that follows the same structure.
 
