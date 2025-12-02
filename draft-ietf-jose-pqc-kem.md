@@ -103,6 +103,12 @@ informative:
      title: Recommendation for Pair-Wise Key-Establishment Schemes Using Discrete Logarithm Cryptography, NIST Special Publication 800-56A Revision 3
      target: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-56Ar3.pdf
      date: April 2018
+  NIST.SP.800-57pt1r5:
+    author:
+      org: National Institute of Standards and Technology
+    title: Recommendation for Key Management, Part 1 – General, NIST Special Publication 800-57 Part 1 Revision 5
+    target: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r5.pdf
+    date: May 2020
      
 --- abstract
 
@@ -408,10 +414,7 @@ ML-KEM-1024 MUST be used with a KDF capable of outputting a key with at least 25
 The "AKP" (Algorithm Key Pair) key type, defined in {{?I-D.ietf-cose-dilithium}} is used in this specification to
 represent PQC KEM keys for JOSE and COSE. When used with JOSE or COSE algorithms that rely on PQC KEMs, a key with "kty" set to "AKP" represents an PQC KEM key pair. The public key is carried in the "pub" parameter. If included, the private key is carried in the "priv" parameter. When expressed as a JWK, the "pub" and "priv" values are base64url-encoded.
 
-The "AKP" key type mandates the use of the "alg" parameter. While this requirement is suitable for PQ digital signature algorithms, applying the same model to PQ KEMs would require distinguishing between keys used
-for Direct Key Agreement and those used for Key Agreement with Key Wrap.
-
-Note: This differs from the "OKP" usage model and requires further discussion within the WG.
+The "AKP" key type mandates inclusion of the "alg" parameter, and applying AKP to PQC KEMs requires distinguishing between keys used for Direct Key Agreement and those used for Key Agreement with Key Wrap, which is in line with {{NIST.SP.800-57pt1r5}} guidance. Note that the NIST guidance refers to using a key for a single purpose, and both KEM and KEM+KW fall under the same overall purpose of key establishment. In this draft, they are treated as distinct algorithm usages to ensure clear operational separation.
 
 For ML-KEM algorithms, as specified in {{FIPS203}}, there are two possible representations of a private key: a seed and a fully expanded private key derived from the seed. This document specifies the use of only the seed form for private keys. To promote interoperability, this specification mandates that the "priv" parameter MUST contain the 32-byte seed used to generate the ML-KEM key pair. It does not support the expanded private key representation defined by NIST. This approach ensures consistency with other PQC algorithms used in JOSE/COSE, and avoids ambiguity.
 
