@@ -37,8 +37,8 @@ author:
  -
     fullname: Aritra Banerjee
     organization: Nokia
-    city: Munich
-    country: Germany
+    city: London
+    country: United Kingdom
     email: "aritra.banerjee@nokia.com"
  -
     fullname: Hannes Tschofenig
@@ -429,7 +429,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IANA
+- Change Controller: IESG
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -437,7 +437,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-768 PQ-KEM.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IANA
+- Change Controller: IESG
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -445,7 +445,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM.
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IANA
+- Change Controller: IESG
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -453,7 +453,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and CEK wrapped with "A128KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IANA
+- Change Controller: IESG
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -461,7 +461,7 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-768 and CEK wrapped with "A192KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IANA
+- Change Controller: IESG
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
@@ -469,15 +469,15 @@ The following entries are added to the "JSON Web Signature and Encryption Algori
 - Algorithm Description: PQ-KEM that uses ML-KEM-1024 and CEK wrapped with "A256KW".
 - Algorithm Usage Location(s): "alg"
 - JOSE Implementation Requirements: Optional
-- Change Controller: IANA
+- Change Controller: IESG
 - Specification Document(s): [[TBD: This RFC]]
 - Algorithm Analysis Documents(s): TODO
 
-### JSON Web Key Elliptic Curves Registrations
+## JSON Web Key Elliptic Curves Registrations
 
 IANA is requested to register the following values in the "JSON Web Key Elliptic Curve" registry {{JOSE-IANA-Curves}}.
 
-## ML-KEM-512
+### ML-KEM-512
 
 | Curve Name              | ML-KEM-512                                                              |
 |-------------------------|-------------------------------------------------------------------------|
@@ -486,7 +486,7 @@ IANA is requested to register the following values in the "JSON Web Key Elliptic
 | Change Controller       | IESG                                                                   |
 | Specification Document(s) | This document   
 
-## ML-KEM-768
+### ML-KEM-768
 
 | Curve Name              | ML-KEM-768                                                              |
 |-------------------------|-------------------------------------------------------------------------|
@@ -495,7 +495,7 @@ IANA is requested to register the following values in the "JSON Web Key Elliptic
 | Change Controller       | IESG                                                                   |
 | Specification Document(s) | This document                                                       |
 
-## ML-KEM-1024
+### ML-KEM-1024
 
 | Curve Name              | ML-KEM-1024                                                             |
 |-------------------------|-------------------------------------------------------------------------|
@@ -513,7 +513,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Value: TBD1
 - Description: PQ-KEM that uses ML-KEM-512 PQ-KEM.
 - Capabilities: [kty]
-- Change Controller: IANA
+- Change Controller: IESG
 - Reference: This document (TBD)
 - Recommended: No
 
@@ -521,7 +521,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Value: TBD2
 - Description: PQ-KEM that uses ML-KEM-768 PQ-KEM.
 - Capabilities: [kty]
-- Change Controller: IANA
+- Change Controller: IESG
 - Reference: This document (TBD)
 - Recommended: No
 
@@ -529,7 +529,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Value: TBD3
 - Description: PQ-KEM that uses ML-KEM-1024 PQ-KEM.
 - Capabilities: [kty]
-- Change Controller: IANA
+- Change Controller: IESG
 - Reference: This document (TBD)
 - Recommended: No
 
@@ -537,7 +537,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Value: TBD4
 - Description: PQ-KEM that uses ML-KEM-512 PQ-KEM and CEK wrapped with "A128KW".
 - Capabilities: [kty]
-- Change Controller: IANA
+- Change Controller: IESG
 - Reference: This document (TBD)
 - Recommended: No
 
@@ -545,7 +545,7 @@ The following has to be added to the "COSE Algorithms" registry:
 - Value: TBD5
 - Description: PQ-KEM that uses ML-KEM-768 and CEK wrapped with "A192KW".
 - Capabilities: [kty]
-- Change Controller: IANA
+- Change Controller: IESG
 - Reference: This document (TBD)
 - Recommended: No
 
@@ -553,44 +553,44 @@ The following has to be added to the "COSE Algorithms" registry:
 - Value: TBD6
 - Description: PQ-KEM that uses ML-KEM-1024 and CEK wrapped with "A256KW".
 - Capabilities: [kty]
-- Change Controller: IANA
+- Change Controller: IESG
 - Reference: This document (TBD)
 - Recommended: No
 
-# COSE Elliptic Curves Registrations
+## COSE Elliptic Curves Registrations
 
 IANA is requested to register the following values in the "COSE Elliptic Curves" registry {{COSE-IANA-Curves}}.
 
-## ML-KEM-512
+### ML-KEM-512
 
 | Name             | ML-KEM-512                                                              |
 |------------------|-------------------------------------------------------------------------|
 | Value            | TBD2                                                                    |
 | Key Type         | AKP                                                                     |
 | Description      | NIST Post-Quantum ML-KEM-512 |
-| Change Controller| IESG                                                                    |
+| Change Controller| IETF                                                                    |
 | Reference        | This document                                                           |
 | Recommended      | No 
 
-## ML-KEM-768
+### ML-KEM-768
 
 | Name             | ML-KEM-768                                                              |
 |------------------|-------------------------------------------------------------------------|
 | Value            | TBD2                                                                    |
 | Key Type         | AKP                                                                     |
 | Description      | NIST Post-Quantum ML-KEM-768 |
-| Change Controller| IESG                                                                    |
+| Change Controller| IETF                                                                    |
 | Reference        | This document                                                           |
 | Recommended      | No                                                                      |
 
-## ML-KEM-1024
+### ML-KEM-1024
 
 | Name             | ML-KEM-1024                                                             |
 |------------------|-------------------------------------------------------------------------|
 | Value            | TBD3                                                                   |
 | Key Type         | AKP                                                                     |
 | Description      | NIST Post-Quantum ML-KEM-1024 |
-| Change Controller| IESG                                                                    |
+| Change Controller| IETF                                                                    |
 | Reference        | This document                                                           |
 | Recommended      | No                                                                      |
 
