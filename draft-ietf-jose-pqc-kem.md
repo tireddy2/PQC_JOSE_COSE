@@ -149,12 +149,13 @@ For the purposes of this document, we consider a Key Encapsulation Mechanism (KE
 
 where pk is public key, sk is secret key, ct is the ciphertext representing an encapsulated key, and ss is shared secret.
 
-This document uses the JOSE header parameter "kemct" to carry the KEM
-ciphertext `ct` produced by ML-KEM encapsulation. This name is aligned with the
-`kemct` field in the CMS KEMRecipientInfo structure. The name "ek" is not used
-for this JOSE value because FIPS 203 and {{?RFC9936}} use "ek" to denote the
-public ML-KEM encapsulation key. For COSE, this document continues to use the
-COSE HPKE header parameter "ek" to carry the KEM ciphertext.
+This document uses the JOSE header parameter "ek" to carry the KEM ciphertext
+`ct` produced by ML-KEM encapsulation. This differs from the terminology used
+in FIPS 203 and {{?RFC9936}}, where "ek" denotes the public ML-KEM
+encapsulation key. In this document, the public ML-KEM encapsulation key is
+represented as the public component of an AKP key, while the JOSE and COSE
+header parameter "ek" carries the encapsulated key, namely the KEM ciphertext
+`ct`.
 
 KEMs are typically used in cases where two parties, hereby refereed to as the "encapsulater" and the "decapsulater", wish to establish a shared secret via public key cryptography, where the decapsulater has an asymmetric key pair and has previously shared the public key with the encapsulater.
   
@@ -200,9 +201,9 @@ The encapsulation process is as follows:
           SS = KDF(SS', SSLen)
 ~~~
 
-In Direct Key Agreement mode, the output of the KDF MUST be a key of the same length as that used by encryption algorithm. In Key Agreement with Key Wrapping mode, the output of the KDF MUST be a key of the length needed for the specified key wrap algorithm. 
+In Direct Key Agreement mode, the output of the KDF MUST be a key of the same length as that used by the encryption algorithm identified by the "enc" parameter. In Key Agreement with Key Wrapping mode, the output of the KDF MUST be a key of the length needed for the key wrap algorithm identified by the "alg" parameter. For the algorithms defined in this specification, the KDF output length is 128 bits for ML-KEM-512+A128KW, 192 bits for ML-KEM-768+A192KW, and 256 bits for ML-KEM-1024+A256KW.
 
-When Direct Key Agreement is employed, SS is the CEK. When Key Agreement with Key Wrapping is employed, SS is used to wrap the CEK.
+When Direct Key Agreement is employed, SS is the CEK. When Key Agreement with Key Wrapping is employed, SS is the key-encryption key used with AES Key Wrap to wrap the CEK; SS is not the CEK.
 
 ## PQ-KEM Decapsulation {#decrypt}
 
@@ -238,7 +239,7 @@ The key derivation for JOSE is performed using the KMAC defined in NIST SP 800-1
    *  X: The context-specific data used for key derivation includes the concatenation of AlgorithmID, SuppPubInfo, and SuppPrivInfo, as defined in {{NIST.SP.800-56Ar3}}. The fields AlgorithmID and SuppPubInfo 
    are defined in Section 4.6.2 of {{RFC7518}} The fields PartyUInfo and PartyVInfo, also defined in that section, are intentionally excluded. PartyUInfo is omitted because post-quantum KEMs do not support sender authentication. PartyVInfo is excluded because the recipient’s identity is already bound to the public key used for encapsulation, making its inclusion unnecessary. If mutually known private information is required, both parties MUST agree out-of-band to include it as SuppPrivInfo.
 
-   *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
+   *  L: length of the output key in bits. In Direct Key Agreement mode, L is set to the key length required by the content encryption algorithm identified by the "enc" parameter. In Key Agreement with Key Wrapping mode, L is set to the key length required by the key wrap algorithm identified by the "alg" parameter; for ML-KEM-512+A128KW, ML-KEM-768+A192KW, and ML-KEM-1024+A256KW this is 128, 192, and 256 bits, respectively.
 
    *  S: the optional customization label. In this document this parameter is unused, that is it is the zero-length string "".
 
@@ -253,7 +254,7 @@ The key derivation for COSE is performed using the KMAC defined in NIST SP 800-1
 
    *  X: The context structure defined in Section 5.2 of {{?RFC9053}} excluding PartyUInfo and PartyVInfo fields. PartyUInfo is omitted because sender authentication is not available in PQ KEMs. PartyVInfo is excluded because the recipient's identity is already bound to the public key used for encapsulation, making its inclusion redundant. If mutually known private information is to be included, both the sender and the recipient MUST agree out-of-band to include it as SuppPrivInfo in the key derivation function, as defined in {{NIST.SP.800-56Ar3}}. 
    
-   *  L: length of the output key in bits and it would be set to match the length of the key required for the AEAD operation.
+   *  L: length of the output key in bits. In Direct Key Agreement mode, L is set to the key length required by the content encryption algorithm. In Key Agreement with Key Wrapping mode, L is set to the key length required by the key wrap algorithm; for ML-KEM-512+A128KW, ML-KEM-768+A192KW, and ML-KEM-1024+A256KW this is 128, 192, and 256 bits, respectively.
 
    *  S: the optional customization label. In this document this parameter is unused, that is it is the zero-length string "".
 
@@ -276,25 +277,25 @@ This specification describes these two modes of use for PQ-KEM in JWE. Unless ot
 
 * The usage for the "alg" and "enc" header parameters remain the same as in JWE {{RFC7516}}. Subsequently, the plaintext will be encrypted using the CEK, as detailed in Step 15 of Section 5.1 of {{RFC7516}}. 
 
-* The header parameter "kemct" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
+* The header parameter "ek" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
 
-* The recipient MUST base64url decode the ciphertext from the "kemct" header parameter and then use it to derive the CEK using the process defined in {{decrypt}}. 
+* The recipient MUST base64url decode the ciphertext from the "ek" header parameter and then use it to derive the CEK using the process defined in {{decrypt}}. 
 
 *  The JWE Encrypted Key MUST be absent.
 
-Note that when using Direct Key Agreement in JOSE Compact Serialization, inefficiency arises due to double encoding of the KEM ciphertext. In this mode, the "kemct" parameter inside the protected header carries the KEM ciphertext, already base64url-encoded. Then, the entire protected header is base64url-encoded again as part of the compact serialization. 
+Note that when using Direct Key Agreement in JOSE Compact Serialization, inefficiency arises due to double encoding of the KEM ciphertext. In this mode, the "ek" parameter inside the protected header carries the KEM ciphertext, already base64url-encoded. Then, the entire protected header is base64url-encoded again as part of the compact serialization. 
 
 ## Key Agreement with Key Wrapping
 
-* The derived key is generated using the process explained in {{encrypt}} and used to encrypt the CEK. 
+* The derived key is generated using the process explained in {{encrypt}}. The derived key is the key-encryption key for the key wrap algorithm identified by the "alg" parameter, and it is used to encrypt the CEK. The derived key is not the CEK.
 
-* The parameter "kemct" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
+* The parameter "ek" MUST include the output ('ct') from the PQ-KEM algorithm, encoded using base64url.
 
 * The JWE Encrypted Key MUST include the base64url-encoded encrypted CEK. 
 
 * The 'enc' (Encryption Algorithm) header parameter MUST specify a content encryption algorithm from the JSON Web Signature and Encryption Algorithms registry, as defined in {{JOSE-IANA}}.
 
-* The recipient MUST base64url decode the ciphertext from "kemct". Subsequently, it is used to derive the key, through the process defined in {{decrypt}}. The derived key will then be used to decrypt the CEK.
+* The recipient MUST base64url decode the ciphertext from "ek". Subsequently, it is used to derive the key-encryption key through the process defined in {{decrypt}}. The derived key-encryption key is then used with the key wrap algorithm identified by the "alg" parameter to decrypt the CEK.
 
 # Post-Quantum KEM in COSE
 
@@ -447,7 +448,7 @@ intermediate values through APIs, logs, errors, or side channels.
 
 The following entry is added to the "JSON Web Signature and Encryption Header Parameters" registry:
 
-- Header Parameter Name: kemct
+- Header Parameter Name: ek
 - Header Parameter Description: KEM ciphertext
 - Header Parameter Usage Location(s): JWE
 - Change Controller: IESG
@@ -646,6 +647,13 @@ The vectors use the following common inputs:
 a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf
 ~~~
 
+* Second-recipient KEM encapsulation seed for the General JWE JSON
+  multi-recipient vector (hex):
+
+~~~
+d0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeef
+~~~
+
 * JWE initialization vector (hex):
 
 ~~~
@@ -657,6 +665,11 @@ For the key-wrap examples, the CEK is the leftmost bytes of:
 ~~~
 c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedf
 ~~~
+
+The Compact JWE Serialization examples use the same plaintext, KEM
+encapsulation seed, initialization vector, and, for key-wrap, CEK as the
+Flattened JWE JSON Serialization examples. The external AAD input is not used
+with Compact JWE Serialization.
 
 The AKP private key parameter `priv` is the 64-octet ML-KEM seed `d || z`.
 The first 32 octets are `d`; the last 32 octets are `z`. The public key and
@@ -693,11 +706,11 @@ Flattened JWE JSON Serialization:
 
 ~~~ json
 {
-  "protected": "eyJhbGciOiJNTC1LRU0tNTEyIiwiZW5jIjoiQTEyOEdDTSIsImtlbWN0IjoiRUcycm5f\\\nRW11M05YVGNsaDZOR3hNYVFDcGVZeERtM1ZXMEJxOGJ3elBXM0hQM1hjbmdHZVFZaFl3\\\nbXNfSEJXUFpzNk1DZW12ZF94djdVX2dPOXQ0Y1VIQm15OTNSaWxuOVFNNXNpeDZEODVw\\\nRlRYRU0yaUdxRTdEWWgxX3lsVjktZldYNGRhM19wZjlXVTd1aV82bWwzSno0UG5qYklv\\\nS2lFVEI1Y0diUmFJNk8tTkVDaE82LWlKajFoNUFaQ1NSLWJnaktNMTBERXdRUHpOREJm\\\nT3BQcjdJSFQ4cFBpelk2WG5mblNaRlQxY3ZiTFA4blNYSkNiVmFoMkJkS0NKTkFWT2Ff\\\nN0gtdnlpMHVYRzlZSjZEYWFYbm90dmp1UHRsdzVtRFVkYUlFdWNxNnM1MzVvMnVOaTBM\\\nQzhEX3dlOHRwT042YTNqNWJDVWFnS3BxdEduejdrbUJfVHZNd0ZLZTRrcXZhZ3pCbmRL\\\nTkVyOFZxaWlMZHlMMzdmbWhjY0NMQTlZaUFFY2NrOHhDUHdCdVpDUFR3c2xsX2hLcjBB\\\nSUtHSm13WklxUVdmUXE1UHk0OWU2NFFqbHU5ZzhuNlRFazFKMXRQakdGdFp4Z0lsTFR4\\\nSFEzeEF4YWcyYnEzNWxhcHdVY0FZSlhsQkxPdW9BektNU19VT0d5bjh0RWhtamN0Z0Yy\\\nNXhGNEZ4elYyOGtxUUhncUp3VHI3MjZjcVB3QlAwSG0yamE4eExVU29vSUM5TklvWlRm\\\nSWI4T3k3ZkVxNE5PNzh4QnZGOFlsdU1wZC1fMkJpdU9QcXpENnE0TmFuTzlJVm9kTlhs\\\nMF9zZW5zOER0VWhnTEszSG4yREYtMTFCQlRqVkdPRmFFT2s5MmticDRjRFU3WTlhR3VN\\\nT3pNSWM1LXJFdEZtYXZuQTRtYnBOdGlkMjQ3VVpFalVCb0xTY3dTM1pnOG9CUnJ0a2dU\\\nNHZSeTF6bnM5ek1WOVV3dFlpeDByTE1rekVZbndsb3NoR2FTSFRwRFh0NFdoZkhXR2pY\\\nMFk4RHNsY3lfMUN6Zzg5X1pQMUJjVXB3OTVqdFVUWlFfUzlPQTFRQWR0WE9YY1lhSlNT\\\nQ3RULUg4cUdrcl92N3NnX3hWLTE0SzhBc0twU1JQa1FhQ1JKS3FaRVN3SDV5dVpva2pQ\\\ndHFtYk14dkZndmhNbGlSTmtGRkRYaWdhSHIwcUxudXlFUktFZjY2RUdaWTUxUWp6aUVa\\\nQ0ZQTmpLeG9vd21NLTVwcTBWSDR0d3JfNGZHWVJUTUJHSV8waVNGYnNpQU1QbjF4VEt0\\\ncER3THdLV2MzZmJwbFRnTXkxWnltRC1OckxXVXpzTng3WVhqYUktNTBjUjcwa3J3YiJ9",
+  "protected": "eyJhbGciOiJNTC1LRU0tNTEyIiwiZW5jIjoiQTEyOEdDTSIsImVrIjoiRUcycm5fRW11\\\nM05YVGNsaDZOR3hNYVFDcGVZeERtM1ZXMEJxOGJ3elBXM0hQM1hjbmdHZVFZaFl3bXNf\\\nSEJXUFpzNk1DZW12ZF94djdVX2dPOXQ0Y1VIQm15OTNSaWxuOVFNNXNpeDZEODVwRlRY\\\nRU0yaUdxRTdEWWgxX3lsVjktZldYNGRhM19wZjlXVTd1aV82bWwzSno0UG5qYklvS2lF\\\nVEI1Y0diUmFJNk8tTkVDaE82LWlKajFoNUFaQ1NSLWJnaktNMTBERXdRUHpOREJmT3BQ\\\ncjdJSFQ4cFBpelk2WG5mblNaRlQxY3ZiTFA4blNYSkNiVmFoMkJkS0NKTkFWT2FfN0gt\\\ndnlpMHVYRzlZSjZEYWFYbm90dmp1UHRsdzVtRFVkYUlFdWNxNnM1MzVvMnVOaTBMQzhE\\\nX3dlOHRwT042YTNqNWJDVWFnS3BxdEduejdrbUJfVHZNd0ZLZTRrcXZhZ3pCbmRLTkVy\\\nOFZxaWlMZHlMMzdmbWhjY0NMQTlZaUFFY2NrOHhDUHdCdVpDUFR3c2xsX2hLcjBBSUtH\\\nSm13WklxUVdmUXE1UHk0OWU2NFFqbHU5ZzhuNlRFazFKMXRQakdGdFp4Z0lsTFR4SFEz\\\neEF4YWcyYnEzNWxhcHdVY0FZSlhsQkxPdW9BektNU19VT0d5bjh0RWhtamN0Z0YyNXhG\\\nNEZ4elYyOGtxUUhncUp3VHI3MjZjcVB3QlAwSG0yamE4eExVU29vSUM5TklvWlRmSWI4\\\nT3k3ZkVxNE5PNzh4QnZGOFlsdU1wZC1fMkJpdU9QcXpENnE0TmFuTzlJVm9kTlhsMF9z\\\nZW5zOER0VWhnTEszSG4yREYtMTFCQlRqVkdPRmFFT2s5MmticDRjRFU3WTlhR3VNT3pN\\\nSWM1LXJFdEZtYXZuQTRtYnBOdGlkMjQ3VVpFalVCb0xTY3dTM1pnOG9CUnJ0a2dUNHZS\\\neTF6bnM5ek1WOVV3dFlpeDByTE1rekVZbndsb3NoR2FTSFRwRFh0NFdoZkhXR2pYMFk4\\\nRHNsY3lfMUN6Zzg5X1pQMUJjVXB3OTVqdFVUWlFfUzlPQTFRQWR0WE9YY1lhSlNTQ3RU\\\nLUg4cUdrcl92N3NnX3hWLTE0SzhBc0twU1JQa1FhQ1JKS3FaRVN3SDV5dVpva2pQdHFt\\\nYk14dkZndmhNbGlSTmtGRkRYaWdhSHIwcUxudXlFUktFZjY2RUdaWTUxUWp6aUVaQ0ZQ\\\nTmpLeG9vd21NLTVwcTBWSDR0d3JfNGZHWVJUTUJHSV8waVNGYnNpQU1QbjF4VEt0cER3\\\nTHdLV2MzZmJwbFRnTXkxWnltRC1OckxXVXpzTng3WVhqYUktNTBjUjcwa3J3YiJ9",
   "aad": "ZXh0ZXJuYWwtYWFk",
   "iv": "sLGys7S1tre4ubq7",
   "ciphertext": "2_fxcDfSskbGhZa8P5jG8Vwio8A",
-  "tag": "d4Lk47RpbBGiW37y5JvHIg"
+  "tag": "CMNr5e7M1dHiZ8K3x9i9VQ"
 }
 ~~~
 
@@ -729,11 +742,11 @@ Flattened JWE JSON Serialization:
 
 ~~~ json
 {
-  "protected": "eyJhbGciOiJNTC1LRU0tNzY4IiwiZW5jIjoiQTE5MkdDTSIsImtlbWN0IjoiOTFzUGRM\\\nY19EWkc2OFBVdzBXVmQwUUhZMFp5cFo2dEFUMENRWkJDSE1pNmp6cTFBNUhfQUxZcEk3\\\naFp1Nk4zQjRLcXU5emJicXJhUHJmbTJOR2lfUmhYR1JXTzJ1VjhfV2VKcGVicktnejZk\\\nNm5UbVJrNjd3U1d2dGJINEkwZXFRWTgwYjFQN0FpQTd3ak9OOWt5LWlJR2RMUjlmZ1pu\\\nU2JNcjlmS3JqMXR5Z29wejhNWHNTYjl6RVpMMjhPNkl3MXBhc3Atc0xSU0lxWVIwYXdj\\\naHI1XzZnTWZzN0tHX2J1TlRlT3RqMzlLM3V6SmZ0VWY2a2llY2pvMGxtcjZfUHA3THBk\\\nb2RMMEdhemVQdjNwQURQYml0SmZja2xVTml1MDgtbjJ0N3Nqcnd3SWxINHVXZzhsdnRZ\\\nQVU3dkdZMmZKYW00MWwyZEFMZG1ZY1VFQzR1ZGUyNFIxUHNya1dxeXZLOUVYTVI5czI0\\\nWDM3T3dlVTJBdW5YbUdIMFZtR015OFpFc05DcFJWUDBVVF9LZWloSklIcFpsMF9ySEdl\\\nT25uZjFOajNJZFVhWGt1M0k2RzdVMlBpOWpPWElDV3JoSTNvdFBPZEttRVlnUm5feFJY\\\nb1FUWkxmVW93a19ncWRMMUM0SUJHdFUyVnZTYVgweFEyN2Q3bEZsRWlWd2JQdERTY05K\\\nYmQ0bHBBVkVuNVJYWWpLR3lnN1VIVTN4eG9nNTVYQldiZThVUkxGcUU2LTNLWEdrU0Fk\\\nYmtDUS1WMlYyd05rc1hwakZYVlhMZm5NMnphUksxY1RYei1XQlNLNWxiTndUc3FkWFFk\\\nMmZiNGRmQmxWT2hwMEhEamhpdFFDSVZxME9sLXdMV2NhRmprVVpBMWhNc3BPSHBlTnNY\\\neXYyMi01Yy1pXzM0cy03S252Q0hJeEFQRUlIcEtlLUNoMndCVFhoOWhHMjktR1k2RUkw\\\nQmNvd01tNVNTVXRNTGZhVFBXTHVXRTdWejlXUGpKejIzNzRYY2oyb0NJbXN4X29zY0lh\\\nelR0cVlpZjMyUDNFOU4wYTV5RmtjREJJR0d1RmxLMDNkdnJSWE0tWWl4VlVYYW9qcVZk\\\nSE9ndmNxY0p0QW1peElicGRNaG15UDVNQWxGQ3pCLXdxOTBZQ0R1Yy1WSm93QVF5X29w\\\nRHFPWnRaenBqSk1ZVXpWS0VRejk5eWRLd2I4bUt3LWJjRnAxdmR6STJ6eUNRYWRQTzVU\\\nU1ZrN0JGSVVfUjExQ0pOVUdmVWpxaGY1UnhGSFR3MURKMjRrZXZQX1ZEYVU0RmlUazhl\\\nNklVYjlEaHUwbnh6X2hfTXd0RkpnOTE1Q1pQWXVOUlVoTXBKQm5EdnMybzV3Y3F6VzBt\\\nMkdPZTVtYmN3WWQybEJTX3Y0Z3JncWM1ZUo0STFSbnhGZDRPTWptRHk0Yzg3ZjdtdDEw\\\ndFYzQzJTSFRnMnY2RUZDZWF4MDRQMllkU1hjQjF2WlZXU204QjdlYWpya2swVzNyMHZT\\\nSEpneGhYUEhXSmJyWHpuVEVSOHcyc2tka1RPeUxRczBSLVpDTlpodXBPel9pTmlfc0VF\\\neWZtNDFKOEExVk1WeDAySktYREhqWDhmZ2hETk9WRFhGa19PN252NGVDd2h1cXBKWUh1\\\nS0ppYkYyOWtESUljVXY3V3A1MGJpNTlUT05CcGVpMzEyLVJBLU9pLUVYM21qRjRIalJ3\\\nWHRXNmlxNl9YeWs0dl9la1ZVZ1B2cndkTXdRSkVjV1kxZ2FGbHZ3T2pjMTA0WGp6MW9V\\\nRlh3OGhLbWVjbm9KSHBTa1RjUHF1Vl8tNDdDSGNUWUJaZkJaSk9wbno4TDFQOEtaZEZm\\\nanpGT2VNMGl5b0ZJLVU2RVMxbVhLcWE2bHpmMFdWWE1HUm1UYVEtMlJqYjdpN2JOY1I5\\\nU0xrOXFROWFVNThRa2N0TWMifQ",
+  "protected": "eyJhbGciOiJNTC1LRU0tNzY4IiwiZW5jIjoiQTE5MkdDTSIsImVrIjoiOTFzUGRMY19E\\\nWkc2OFBVdzBXVmQwUUhZMFp5cFo2dEFUMENRWkJDSE1pNmp6cTFBNUhfQUxZcEk3aFp1\\\nNk4zQjRLcXU5emJicXJhUHJmbTJOR2lfUmhYR1JXTzJ1VjhfV2VKcGVicktnejZkNm5U\\\nbVJrNjd3U1d2dGJINEkwZXFRWTgwYjFQN0FpQTd3ak9OOWt5LWlJR2RMUjlmZ1puU2JN\\\ncjlmS3JqMXR5Z29wejhNWHNTYjl6RVpMMjhPNkl3MXBhc3Atc0xSU0lxWVIwYXdjaHI1\\\nXzZnTWZzN0tHX2J1TlRlT3RqMzlLM3V6SmZ0VWY2a2llY2pvMGxtcjZfUHA3THBkb2RM\\\nMEdhemVQdjNwQURQYml0SmZja2xVTml1MDgtbjJ0N3Nqcnd3SWxINHVXZzhsdnRZQVU3\\\ndkdZMmZKYW00MWwyZEFMZG1ZY1VFQzR1ZGUyNFIxUHNya1dxeXZLOUVYTVI5czI0WDM3\\\nT3dlVTJBdW5YbUdIMFZtR015OFpFc05DcFJWUDBVVF9LZWloSklIcFpsMF9ySEdlT25u\\\nZjFOajNJZFVhWGt1M0k2RzdVMlBpOWpPWElDV3JoSTNvdFBPZEttRVlnUm5feFJYb1FU\\\nWkxmVW93a19ncWRMMUM0SUJHdFUyVnZTYVgweFEyN2Q3bEZsRWlWd2JQdERTY05KYmQ0\\\nbHBBVkVuNVJYWWpLR3lnN1VIVTN4eG9nNTVYQldiZThVUkxGcUU2LTNLWEdrU0FkYmtD\\\nUS1WMlYyd05rc1hwakZYVlhMZm5NMnphUksxY1RYei1XQlNLNWxiTndUc3FkWFFkMmZi\\\nNGRmQmxWT2hwMEhEamhpdFFDSVZxME9sLXdMV2NhRmprVVpBMWhNc3BPSHBlTnNYeXYy\\\nMi01Yy1pXzM0cy03S252Q0hJeEFQRUlIcEtlLUNoMndCVFhoOWhHMjktR1k2RUkwQmNv\\\nd01tNVNTVXRNTGZhVFBXTHVXRTdWejlXUGpKejIzNzRYY2oyb0NJbXN4X29zY0lhelR0\\\ncVlpZjMyUDNFOU4wYTV5RmtjREJJR0d1RmxLMDNkdnJSWE0tWWl4VlVYYW9qcVZkSE9n\\\ndmNxY0p0QW1peElicGRNaG15UDVNQWxGQ3pCLXdxOTBZQ0R1Yy1WSm93QVF5X29wRHFP\\\nWnRaenBqSk1ZVXpWS0VRejk5eWRLd2I4bUt3LWJjRnAxdmR6STJ6eUNRYWRQTzVUU1Zr\\\nN0JGSVVfUjExQ0pOVUdmVWpxaGY1UnhGSFR3MURKMjRrZXZQX1ZEYVU0RmlUazhlNklV\\\nYjlEaHUwbnh6X2hfTXd0RkpnOTE1Q1pQWXVOUlVoTXBKQm5EdnMybzV3Y3F6VzBtMkdP\\\nZTVtYmN3WWQybEJTX3Y0Z3JncWM1ZUo0STFSbnhGZDRPTWptRHk0Yzg3ZjdtdDEwdFYz\\\nQzJTSFRnMnY2RUZDZWF4MDRQMllkU1hjQjF2WlZXU204QjdlYWpya2swVzNyMHZTSEpn\\\neGhYUEhXSmJyWHpuVEVSOHcyc2tka1RPeUxRczBSLVpDTlpodXBPel9pTmlfc0VFeWZt\\\nNDFKOEExVk1WeDAySktYREhqWDhmZ2hETk9WRFhGa19PN252NGVDd2h1cXBKWUh1S0pp\\\nYkYyOWtESUljVXY3V3A1MGJpNTlUT05CcGVpMzEyLVJBLU9pLUVYM21qRjRIalJ3WHRX\\\nNmlxNl9YeWs0dl9la1ZVZ1B2cndkTXdRSkVjV1kxZ2FGbHZ3T2pjMTA0WGp6MW9VRlh3\\\nOGhLbWVjbm9KSHBTa1RjUHF1Vl8tNDdDSGNUWUJaZkJaSk9wbno4TDFQOEtaZEZmanpG\\\nT2VNMGl5b0ZJLVU2RVMxbVhLcWE2bHpmMFdWWE1HUm1UYVEtMlJqYjdpN2JOY1I5U0xr\\\nOXFROWFVNThRa2N0TWMifQ",
   "aad": "ZXh0ZXJuYWwtYWFk",
   "iv": "sLGys7S1tre4ubq7",
   "ciphertext": "sZgViZ32UgZWmnkqJVYQy30OW5w",
-  "tag": "zswF71G0kLpahy1iXKFzfg"
+  "tag": "8SCb5ALcoWE6SQyY8E9xLw"
 }
 ~~~
 
@@ -765,11 +778,11 @@ Flattened JWE JSON Serialization:
 
 ~~~ json
 {
-  "protected": "eyJhbGciOiJNTC1LRU0tMTAyNCIsImVuYyI6IkEyNTZHQ00iLCJrZW1jdCI6ImJKTUpn\\\nelRWTkM0RkhDVWNEcExJbDVmNWZHSkptWE1FVEdRYXRZQzdMUzNEYjFOSlRVMTNhVkZv\\\nRDBxSGhXS04xUm1UWjVjTkVqcXNGb1VOQ2NXQ0tmWkJDSE5NV0dGSTZteXZfVzNldzVD\\\ncVJEUXZBS1c0eko5WHFHb1UycWJUaVRzamVIWm03YkM1Z3lYNzlHWDRYVDVla3NCMWpK\\\ncTg0aXlIelRoSEMxWGVwUkgzLUtTeE93Ti1OWjBBZm5vZ202dktWbWI0a25nMWtWWC16\\\ncGNsc215dW9JYTA1VWllbF92enEzQWFmcno5MGd6bVNuaFRCZElwQUQtWTM1MnExNnV3\\\nLVRHSWNmSHlxbkFHRFBHa1BWM1oyRF9iRFNxaGV0ZkpvS0poRXFLbU5XbGs5LVl0LTdf\\\nOUwtZnFlaDJ1cjF4aG05RFVBSHdrR0NNQmFyQUxXYkYzOXhaaWNWMUgzN2VpV1haS3pr\\\nOVotbXJiSFRPeFZUbDA1aXVrbWtGb1lkWmY5WEF1MTZ6OVlfZ3plMGlVLXh3cU1MTVVT\\\nekJxWUNZZkFMTmVNNUJYLXVxdnZUSjJOTEhycl9HbUlxWHdmMnlsbGcySHhTdVAxUG9o\\\nbm40T3JUZTZUUC1vQzhGa2xqSDhZNzdZTHNSaFlYOEduZXdWcVAxcW9uSFpaWEhKdzV0\\\neENpblFyRmtOZWhZSDlLdGx5RTJSMGZ1cjdXOF9hb1FUVXI5czN4cVVTS3NPd2dNdW0y\\\nT2xMM21GV0FXUC1MTjU3bGtSeUhnRzFNWU9PNGpGM245UUxlTTNfZDJGcDdYUmRkSE13\\\nUTk5WWlZYUwzZmpZS0piclhRVFhnMGNoZHFoSFF1X3d3VmE5Ynd0UzJJWmpZbHRVRERt\\\neHEzLXFKWXhycXRBbnZFa1BfN0Q2OWVDdXVwSWdLZUkyMWJXRFFhU2pXV2hBVUlYbENw\\\nejZpQXAzNnVDSTBwWWo3dTAxX2VMd3BtNUJFMHRXNzZQYlFCUWI4YTZvYTVjVjdZd194\\\nSWs2bnZuYWpSendaV21IbkRZVnY5QVV0SVBweV9BaWZDeVlUcE1XWVRwRFczOFZwYkdN\\\neVpZT1lXVzZIWTlKTTJpY2VhbG1EaGpYY0NhbU5MZzJ3Q0lQT0wyR1ZQNW9hUDhDOUZf\\\nQXVvb2JIV2FGX0k4c1lDbjcyZXdvYjVCbzhidzlDZ0g4elY3Z04xUnVQTVNRSGI0bnMy\\\nUUVfRmpaS0hzOFJXV1Z3dEF2aFRQQWVuX0N5UzM1Zmd4V1JleGlrWlNrOFdKaGFLYjB0\\\nVFJzQ1N4Snc3b2s1QmZXMXliY05JWXZiY0Jtdy1oMkJFNGotTVZua1RUYmZqMHA4VGN2\\\nVk9ybVhmLTl5dXYxQWNfZkk3WEhqTF9DRGpvOWtkMkUxdkFuUXFXNFJmRHIyTjBUdW9J\\\nQ2RNUndralByUDA4VmJ0bTYxNVJZUWwwc0p1d1IwU2g0b2xVMDRlaWYwbEt1UF90N0Ni\\\nYWlqOVhmdkV3WmtyRGIwcWdzWkNhckdjZmdxSTJMY1FRV29uRW93OGN1Z1JRbnJxU2hy\\\nSFBqS2xxQU5EV3BZNVFPalcwZFFNcmlSM1dwS1NGcDUxdnlpZHJjZS14M05QOFhoWmtU\\\nZ0xYTDVpbU1PR2xNbEV4N2RXaktxcDhrQU1yOF9hTjlNUTJSMmRYUERzbWRac0lYWHhp\\\nR2dIWHE1a05lZHlZc2lJRWt6OWxSYmlSVWtTdVBwUjVfM0VBUjNYQlNyazNoc2lUcmJS\\\nMmI0ODEtWDFYcXNyYmJSRVRQQ0FSZlQ0OFh4N3VldHphSThTUE5CekhvbDN0TjlYMmRZ\\\ndmhlaTgxUHBEV20ybDRNeDU0Y0g4aUxkTHU0OXl1OHRWOElIS1dZSkhxLWxjNGxNTnp6\\\nLWxKWmFTdzNvRm1WNWdaV05DUlZiVFVaVXhvQjg2d29qZkV3RjY5Qk1seW5MTGd5QlBi\\\nQjV6NVM4MlMwc2pWSE9SR01WQ0h3ME0yckpmY3QtcHJkalRaZEZNdTl1bW1SZXlyaWRx\\\nZ3FNLW51SFpwS1k3anl5NndHN3VZem5nam1KWHFVS0tGUWdxN0NJWXdDUXd5QlJYRUZy\\\nMURRemNNblgzYlZta1BQX0FQZURQYXJsSkJKM05UbXVYYUtDV00wZm50cDFsejlRRDVW\\\neFpyMnU1NW4yM0NIU2ZyZGNvUHgxSTBwMng5TFNudzJqR1JDYkpRTmp4dHVBamZzUFha\\\nX3ZoRTNLOHBjN2F1SWpscS1UMmJWZ3ZtWW1KTndrODRtaGJvaE9ndzlrWm13YkRVa1Bt\\\nVGdDaWMycTBaR01FWTNTWHJxY3BQYUM0bk5EXzJMVWtIUVVGSS1TanZXOVN2LUtPUGgy\\\nZXk5RUFWS0N3MVVaeklXbGxrS2pyeVRFcW5xUnZ4eEozcU9Wck93dm5UaGhEVjZOY3VE\\\nREd2UGEwczZQRjhIOG1QQkpXZ09yWVVRcE1YSk12eC15QlMyZV8zM1NfWkpUQXhEUW80\\\nT1JkWTRzd0tXdXVwUnRhV3NYZmR0Rk1Sbk1oeWdUUE9Yd3hQNkFDSUVYaWV5Mzcyand1\\\nVWgwSjdkemd2WkUxQmtLTUNWMVpQYng0OGFlejlfVGhfZDBrSkQ5ZnFBM21mREN6Zk50\\\nUUdFU0t1cncxejFRelNPQi1HZzR3b3JyMEV2c1NGZmpONUFpZk0tWjNGQ1dsRVZlSWw4\\\nbDduWHptc0I2UHhETXo5eWVfb3pYTFQzYXlJUzRJWHJQMlpYVzRwR2RZMnRKYyJ9",
+  "protected": "eyJhbGciOiJNTC1LRU0tMTAyNCIsImVuYyI6IkEyNTZHQ00iLCJlayI6ImJKTUpnelRW\\\nTkM0RkhDVWNEcExJbDVmNWZHSkptWE1FVEdRYXRZQzdMUzNEYjFOSlRVMTNhVkZvRDBx\\\nSGhXS04xUm1UWjVjTkVqcXNGb1VOQ2NXQ0tmWkJDSE5NV0dGSTZteXZfVzNldzVDcVJE\\\nUXZBS1c0eko5WHFHb1UycWJUaVRzamVIWm03YkM1Z3lYNzlHWDRYVDVla3NCMWpKcTg0\\\naXlIelRoSEMxWGVwUkgzLUtTeE93Ti1OWjBBZm5vZ202dktWbWI0a25nMWtWWC16cGNs\\\nc215dW9JYTA1VWllbF92enEzQWFmcno5MGd6bVNuaFRCZElwQUQtWTM1MnExNnV3LVRH\\\nSWNmSHlxbkFHRFBHa1BWM1oyRF9iRFNxaGV0ZkpvS0poRXFLbU5XbGs5LVl0LTdfOUwt\\\nZnFlaDJ1cjF4aG05RFVBSHdrR0NNQmFyQUxXYkYzOXhaaWNWMUgzN2VpV1haS3prOVot\\\nbXJiSFRPeFZUbDA1aXVrbWtGb1lkWmY5WEF1MTZ6OVlfZ3plMGlVLXh3cU1MTVVTekJx\\\nWUNZZkFMTmVNNUJYLXVxdnZUSjJOTEhycl9HbUlxWHdmMnlsbGcySHhTdVAxUG9obm40\\\nT3JUZTZUUC1vQzhGa2xqSDhZNzdZTHNSaFlYOEduZXdWcVAxcW9uSFpaWEhKdzV0eENp\\\nblFyRmtOZWhZSDlLdGx5RTJSMGZ1cjdXOF9hb1FUVXI5czN4cVVTS3NPd2dNdW0yT2xM\\\nM21GV0FXUC1MTjU3bGtSeUhnRzFNWU9PNGpGM245UUxlTTNfZDJGcDdYUmRkSE13UTk5\\\nWWlZYUwzZmpZS0piclhRVFhnMGNoZHFoSFF1X3d3VmE5Ynd0UzJJWmpZbHRVRERteHEz\\\nLXFKWXhycXRBbnZFa1BfN0Q2OWVDdXVwSWdLZUkyMWJXRFFhU2pXV2hBVUlYbENwejZp\\\nQXAzNnVDSTBwWWo3dTAxX2VMd3BtNUJFMHRXNzZQYlFCUWI4YTZvYTVjVjdZd194SWs2\\\nbnZuYWpSendaV21IbkRZVnY5QVV0SVBweV9BaWZDeVlUcE1XWVRwRFczOFZwYkdNeVpZ\\\nT1lXVzZIWTlKTTJpY2VhbG1EaGpYY0NhbU5MZzJ3Q0lQT0wyR1ZQNW9hUDhDOUZfQXVv\\\nb2JIV2FGX0k4c1lDbjcyZXdvYjVCbzhidzlDZ0g4elY3Z04xUnVQTVNRSGI0bnMyUUVf\\\nRmpaS0hzOFJXV1Z3dEF2aFRQQWVuX0N5UzM1Zmd4V1JleGlrWlNrOFdKaGFLYjB0VFJz\\\nQ1N4Snc3b2s1QmZXMXliY05JWXZiY0Jtdy1oMkJFNGotTVZua1RUYmZqMHA4VGN2Vk9y\\\nbVhmLTl5dXYxQWNfZkk3WEhqTF9DRGpvOWtkMkUxdkFuUXFXNFJmRHIyTjBUdW9JQ2RN\\\nUndralByUDA4VmJ0bTYxNVJZUWwwc0p1d1IwU2g0b2xVMDRlaWYwbEt1UF90N0NiYWlq\\\nOVhmdkV3WmtyRGIwcWdzWkNhckdjZmdxSTJMY1FRV29uRW93OGN1Z1JRbnJxU2hySFBq\\\nS2xxQU5EV3BZNVFPalcwZFFNcmlSM1dwS1NGcDUxdnlpZHJjZS14M05QOFhoWmtUZ0xY\\\nTDVpbU1PR2xNbEV4N2RXaktxcDhrQU1yOF9hTjlNUTJSMmRYUERzbWRac0lYWHhpR2dI\\\nWHE1a05lZHlZc2lJRWt6OWxSYmlSVWtTdVBwUjVfM0VBUjNYQlNyazNoc2lUcmJSMmI0\\\nODEtWDFYcXNyYmJSRVRQQ0FSZlQ0OFh4N3VldHphSThTUE5CekhvbDN0TjlYMmRZdmhl\\\naTgxUHBEV20ybDRNeDU0Y0g4aUxkTHU0OXl1OHRWOElIS1dZSkhxLWxjNGxNTnp6LWxK\\\nWmFTdzNvRm1WNWdaV05DUlZiVFVaVXhvQjg2d29qZkV3RjY5Qk1seW5MTGd5QlBiQjV6\\\nNVM4MlMwc2pWSE9SR01WQ0h3ME0yckpmY3QtcHJkalRaZEZNdTl1bW1SZXlyaWRxZ3FN\\\nLW51SFpwS1k3anl5NndHN3VZem5nam1KWHFVS0tGUWdxN0NJWXdDUXd5QlJYRUZyMURR\\\nemNNblgzYlZta1BQX0FQZURQYXJsSkJKM05UbXVYYUtDV00wZm50cDFsejlRRDVWeFpy\\\nMnU1NW4yM0NIU2ZyZGNvUHgxSTBwMng5TFNudzJqR1JDYkpRTmp4dHVBamZzUFhaX3Zo\\\nRTNLOHBjN2F1SWpscS1UMmJWZ3ZtWW1KTndrODRtaGJvaE9ndzlrWm13YkRVa1BtVGdD\\\naWMycTBaR01FWTNTWHJxY3BQYUM0bk5EXzJMVWtIUVVGSS1TanZXOVN2LUtPUGgyZXk5\\\nRUFWS0N3MVVaeklXbGxrS2pyeVRFcW5xUnZ4eEozcU9Wck93dm5UaGhEVjZOY3VEREd2\\\nUGEwczZQRjhIOG1QQkpXZ09yWVVRcE1YSk12eC15QlMyZV8zM1NfWkpUQXhEUW80T1Jk\\\nWTRzd0tXdXVwUnRhV3NYZmR0Rk1Sbk1oeWdUUE9Yd3hQNkFDSUVYaWV5Mzcyand1VWgw\\\nSjdkemd2WkUxQmtLTUNWMVpQYng0OGFlejlfVGhfZDBrSkQ5ZnFBM21mREN6Zk50UUdF\\\nU0t1cncxejFRelNPQi1HZzR3b3JyMEV2c1NGZmpONUFpZk0tWjNGQ1dsRVZlSWw4bDdu\\\nWHptc0I2UHhETXo5eWVfb3pYTFQzYXlJUzRJWHJQMlpYVzRwR2RZMnRKYyJ9",
   "aad": "ZXh0ZXJuYWwtYWFk",
   "iv": "sLGys7S1tre4ubq7",
   "ciphertext": "FDe4L600BXL6yMj8D9a1eVmrAx0",
-  "tag": "g6qHZSEEmEbMdhgzqJJTvA"
+  "tag": "3i-Wd9cVH2ZtFMNthW8OCA"
 }
 ~~~
 
@@ -801,12 +814,12 @@ Flattened JWE JSON Serialization:
 
 ~~~ json
 {
-  "protected": "eyJhbGciOiJNTC1LRU0tNTEyK0ExMjhLVyIsImVuYyI6IkExMjhHQ00iLCJrZW1jdCI6\\\nIkVHMnJuX0VtdTNOWFRjbGg2Tkd4TWFRQ3BlWXhEbTNWVzBCcThid3pQVzNIUDNYY25n\\\nR2VRWWhZd21zX0hCV1BaczZNQ2VtdmRfeHY3VV9nTzl0NGNVSEJteTkzUmlsbjlRTTVz\\\naXg2RDg1cEZUWEVNMmlHcUU3RFloMV95bFY5LWZXWDRkYTNfcGY5V1U3dWlfNm1sM0p6\\\nNFBuamJJb0tpRVRCNWNHYlJhSTZPLU5FQ2hPNi1pSmoxaDVBWkNTUi1iZ2pLTTEwREV3\\\nUVB6TkRCZk9wUHI3SUhUOHBQaXpZNlhuZm5TWkZUMWN2YkxQOG5TWEpDYlZhaDJCZEtD\\\nSk5BVk9hXzdILXZ5aTB1WEc5WUo2RGFhWG5vdHZqdVB0bHc1bURVZGFJRXVjcTZzNTM1\\\nbzJ1TmkwTEM4RF93ZTh0cE9ONmEzajViQ1VhZ0twcXRHbno3a21CX1R2TXdGS2U0a3F2\\\nYWd6Qm5kS05FcjhWcWlpTGR5TDM3Zm1oY2NDTEE5WWlBRWNjazh4Q1B3QnVaQ1BUd3Ns\\\nbF9oS3IwQUlLR0ptd1pJcVFXZlFxNVB5NDllNjRRamx1OWc4bjZURWsxSjF0UGpHRnRa\\\neGdJbExUeEhRM3hBeGFnMmJxMzVsYXB3VWNBWUpYbEJMT3VvQXpLTVNfVU9HeW44dEVo\\\nbWpjdGdGMjV4RjRGeHpWMjhrcVFIZ3FKd1RyNzI2Y3FQd0JQMEhtMmphOHhMVVNvb0lD\\\nOU5Jb1pUZkliOE95N2ZFcTROTzc4eEJ2RjhZbHVNcGQtXzJCaXVPUHF6RDZxNE5hbk85\\\nSVZvZE5YbDBfc2VuczhEdFVoZ0xLM0huMkRGLTExQkJUalZHT0ZhRU9rOTJrYnA0Y0RV\\\nN1k5YUd1TU96TUljNS1yRXRGbWF2bkE0bWJwTnRpZDI0N1VaRWpVQm9MU2N3UzNaZzhv\\\nQlJydGtnVDR2Unkxem5zOXpNVjlVd3RZaXgwckxNa3pFWW53bG9zaEdhU0hUcERYdDRX\\\naGZIV0dqWDBZOERzbGN5XzFDemc4OV9aUDFCY1Vwdzk1anRVVFpRX1M5T0ExUUFkdFhP\\\nWGNZYUpTU0N0VC1IOHFHa3JfdjdzZ194Vi0xNEs4QXNLcFNSUGtRYUNSSktxWkVTd0g1\\\neXVab2tqUHRxbWJNeHZGZ3ZoTWxpUk5rRkZEWGlnYUhyMHFMbnV5RVJLRWY2NkVHWlk1\\\nMVFqemlFWkNGUE5qS3hvb3dtTS01cHEwVkg0dHdyXzRmR1lSVE1CR0lfMGlTRmJzaUFN\\\nUG4xeFRLdHBEd0x3S1djM2ZicGxUZ015MVp5bUQtTnJMV1V6c054N1lYamFJLTUwY1I3\\\nMGtyd2IifQ",
+  "protected": "eyJhbGciOiJNTC1LRU0tNTEyK0ExMjhLVyIsImVuYyI6IkExMjhHQ00iLCJlayI6IkVH\\\nMnJuX0VtdTNOWFRjbGg2Tkd4TWFRQ3BlWXhEbTNWVzBCcThid3pQVzNIUDNYY25nR2VR\\\nWWhZd21zX0hCV1BaczZNQ2VtdmRfeHY3VV9nTzl0NGNVSEJteTkzUmlsbjlRTTVzaXg2\\\nRDg1cEZUWEVNMmlHcUU3RFloMV95bFY5LWZXWDRkYTNfcGY5V1U3dWlfNm1sM0p6NFBu\\\namJJb0tpRVRCNWNHYlJhSTZPLU5FQ2hPNi1pSmoxaDVBWkNTUi1iZ2pLTTEwREV3UVB6\\\nTkRCZk9wUHI3SUhUOHBQaXpZNlhuZm5TWkZUMWN2YkxQOG5TWEpDYlZhaDJCZEtDSk5B\\\nVk9hXzdILXZ5aTB1WEc5WUo2RGFhWG5vdHZqdVB0bHc1bURVZGFJRXVjcTZzNTM1bzJ1\\\nTmkwTEM4RF93ZTh0cE9ONmEzajViQ1VhZ0twcXRHbno3a21CX1R2TXdGS2U0a3F2YWd6\\\nQm5kS05FcjhWcWlpTGR5TDM3Zm1oY2NDTEE5WWlBRWNjazh4Q1B3QnVaQ1BUd3NsbF9o\\\nS3IwQUlLR0ptd1pJcVFXZlFxNVB5NDllNjRRamx1OWc4bjZURWsxSjF0UGpHRnRaeGdJ\\\nbExUeEhRM3hBeGFnMmJxMzVsYXB3VWNBWUpYbEJMT3VvQXpLTVNfVU9HeW44dEVobWpj\\\ndGdGMjV4RjRGeHpWMjhrcVFIZ3FKd1RyNzI2Y3FQd0JQMEhtMmphOHhMVVNvb0lDOU5J\\\nb1pUZkliOE95N2ZFcTROTzc4eEJ2RjhZbHVNcGQtXzJCaXVPUHF6RDZxNE5hbk85SVZv\\\nZE5YbDBfc2VuczhEdFVoZ0xLM0huMkRGLTExQkJUalZHT0ZhRU9rOTJrYnA0Y0RVN1k5\\\nYUd1TU96TUljNS1yRXRGbWF2bkE0bWJwTnRpZDI0N1VaRWpVQm9MU2N3UzNaZzhvQlJy\\\ndGtnVDR2Unkxem5zOXpNVjlVd3RZaXgwckxNa3pFWW53bG9zaEdhU0hUcERYdDRXaGZI\\\nV0dqWDBZOERzbGN5XzFDemc4OV9aUDFCY1Vwdzk1anRVVFpRX1M5T0ExUUFkdFhPWGNZ\\\nYUpTU0N0VC1IOHFHa3JfdjdzZ194Vi0xNEs4QXNLcFNSUGtRYUNSSktxWkVTd0g1eXVa\\\nb2tqUHRxbWJNeHZGZ3ZoTWxpUk5rRkZEWGlnYUhyMHFMbnV5RVJLRWY2NkVHWlk1MVFq\\\nemlFWkNGUE5qS3hvb3dtTS01cHEwVkg0dHdyXzRmR1lSVE1CR0lfMGlTRmJzaUFNUG4x\\\neFRLdHBEd0x3S1djM2ZicGxUZ015MVp5bUQtTnJMV1V6c054N1lYamFJLTUwY1I3MGty\\\nd2IifQ",
   "encrypted_key": "XuIrp6nvQGFRFzojRkZ-oxOxbDvOob9h",
   "aad": "ZXh0ZXJuYWwtYWFk",
   "iv": "sLGys7S1tre4ubq7",
   "ciphertext": "Uv_qVKYs3G-hDNoDdxYWGFm6Nec",
-  "tag": "VjsU9vGZWRzGfZkFJGQjxg"
+  "tag": "AhG8-Rraa2jLd59bE7FfwA"
 }
 ~~~
 
@@ -838,12 +851,12 @@ Flattened JWE JSON Serialization:
 
 ~~~ json
 {
-  "protected": "eyJhbGciOiJNTC1LRU0tNzY4K0ExOTJLVyIsImVuYyI6IkExOTJHQ00iLCJrZW1jdCI6\\\nIjkxc1BkTGNfRFpHNjhQVXcwV1ZkMFFIWTBaeXBaNnRBVDBDUVpCQ0hNaTZqenExQTVI\\\nX0FMWXBJN2hadTZOM0I0S3F1OXpiYnFyYVByZm0yTkdpX1JoWEdSV08ydVY4X1dlSnBl\\\nYnJLZ3o2ZDZuVG1SazY3d1NXdnRiSDRJMGVxUVk4MGIxUDdBaUE3d2pPTjlreS1pSUdk\\\nTFI5ZmdablNiTXI5ZktyajF0eWdvcHo4TVhzU2I5ekVaTDI4TzZJdzFwYXNwLXNMUlNJ\\\ncVlSMGF3Y2hyNV82Z01mczdLR19idU5UZU90ajM5SzN1ekpmdFVmNmtpZWNqbzBsbXI2\\\nX1BwN0xwZG9kTDBHYXplUHYzcEFEUGJpdEpmY2tsVU5pdTA4LW4ydDdzanJ3d0lsSDR1\\\nV2c4bHZ0WUFVN3ZHWTJmSmFtNDFsMmRBTGRtWWNVRUM0dWRlMjRSMVBzcmtXcXl2SzlF\\\nWE1SOXMyNFgzN093ZVUyQXVuWG1HSDBWbUdNeThaRXNOQ3BSVlAwVVRfS2VpaEpJSHBa\\\nbDBfckhHZU9ubmYxTmozSWRVYVhrdTNJNkc3VTJQaTlqT1hJQ1dyaEkzb3RQT2RLbUVZ\\\nZ1JuX3hSWG9RVFpMZlVvd2tfZ3FkTDFDNElCR3RVMlZ2U2FYMHhRMjdkN2xGbEVpVndi\\\nUHREU2NOSmJkNGxwQVZFbjVSWFlqS0d5ZzdVSFUzeHhvZzU1WEJXYmU4VVJMRnFFNi0z\\\nS1hHa1NBZGJrQ1EtVjJWMndOa3NYcGpGWFZYTGZuTTJ6YVJLMWNUWHotV0JTSzVsYk53\\\nVHNxZFhRZDJmYjRkZkJsVk9ocDBIRGpoaXRRQ0lWcTBPbC13TFdjYUZqa1VaQTFoTXNw\\\nT0hwZU5zWHl2MjItNWMtaV8zNHMtN0tudkNISXhBUEVJSHBLZS1DaDJ3QlRYaDloRzI5\\\nLUdZNkVJMEJjb3dNbTVTU1V0TUxmYVRQV0x1V0U3Vno5V1BqSnoyMzc0WGNqMm9DSW1z\\\neF9vc2NJYXpUdHFZaWYzMlAzRTlOMGE1eUZrY0RCSUdHdUZsSzAzZHZyUlhNLVlpeFZV\\\nWGFvanFWZEhPZ3ZjcWNKdEFtaXhJYnBkTWhteVA1TUFsRkN6Qi13cTkwWUNEdWMtVkpv\\\nd0FReV9vcERxT1p0WnpwakpNWVV6VktFUXo5OXlkS3diOG1Ldy1iY0ZwMXZkekkyenlD\\\nUWFkUE81VFNWazdCRklVX1IxMUNKTlVHZlVqcWhmNVJ4RkhUdzFESjI0a2V2UF9WRGFV\\\nNEZpVGs4ZTZJVWI5RGh1MG54el9oX013dEZKZzkxNUNaUFl1TlJVaE1wSkJuRHZzMm81\\\nd2NxelcwbTJHT2U1bWJjd1lkMmxCU192NGdyZ3FjNWVKNEkxUm54RmQ0T01qbUR5NGM4\\\nN2Y3bXQxMHRWM0MyU0hUZzJ2NkVGQ2VheDA0UDJZZFNYY0IxdlpWV1NtOEI3ZWFqcmtr\\\nMFczcjB2U0hKZ3hoWFBIV0piclh6blRFUjh3MnNrZGtUT3lMUXMwUi1aQ05aaHVwT3pf\\\naU5pX3NFRXlmbTQxSjhBMVZNVngwMkpLWERIalg4ZmdoRE5PVkRYRmtfTzdudjRlQ3do\\\ndXFwSllIdUtKaWJGMjlrRElJY1V2N1dwNTBiaTU5VE9OQnBlaTMxMi1SQS1PaS1FWDNt\\\nakY0SGpSd1h0VzZpcTZfWHlrNHZfZWtWVWdQdnJ3ZE13UUpFY1dZMWdhRmx2d09qYzEw\\\nNFhqejFvVUZYdzhoS21lY25vSkhwU2tUY1BxdVZfLTQ3Q0hjVFlCWmZCWkpPcG56OEwx\\\nUDhLWmRGZmp6Rk9lTTBpeW9GSS1VNkVTMW1YS3FhNmx6ZjBXVlhNR1JtVGFRLTJSamI3\\\naTdiTmNSOVNMazlxUTlhVTU4UWtjdE1jIn0",
+  "protected": "eyJhbGciOiJNTC1LRU0tNzY4K0ExOTJLVyIsImVuYyI6IkExOTJHQ00iLCJlayI6Ijkx\\\nc1BkTGNfRFpHNjhQVXcwV1ZkMFFIWTBaeXBaNnRBVDBDUVpCQ0hNaTZqenExQTVIX0FM\\\nWXBJN2hadTZOM0I0S3F1OXpiYnFyYVByZm0yTkdpX1JoWEdSV08ydVY4X1dlSnBlYnJL\\\nZ3o2ZDZuVG1SazY3d1NXdnRiSDRJMGVxUVk4MGIxUDdBaUE3d2pPTjlreS1pSUdkTFI5\\\nZmdablNiTXI5ZktyajF0eWdvcHo4TVhzU2I5ekVaTDI4TzZJdzFwYXNwLXNMUlNJcVlS\\\nMGF3Y2hyNV82Z01mczdLR19idU5UZU90ajM5SzN1ekpmdFVmNmtpZWNqbzBsbXI2X1Bw\\\nN0xwZG9kTDBHYXplUHYzcEFEUGJpdEpmY2tsVU5pdTA4LW4ydDdzanJ3d0lsSDR1V2c4\\\nbHZ0WUFVN3ZHWTJmSmFtNDFsMmRBTGRtWWNVRUM0dWRlMjRSMVBzcmtXcXl2SzlFWE1S\\\nOXMyNFgzN093ZVUyQXVuWG1HSDBWbUdNeThaRXNOQ3BSVlAwVVRfS2VpaEpJSHBabDBf\\\nckhHZU9ubmYxTmozSWRVYVhrdTNJNkc3VTJQaTlqT1hJQ1dyaEkzb3RQT2RLbUVZZ1Ju\\\nX3hSWG9RVFpMZlVvd2tfZ3FkTDFDNElCR3RVMlZ2U2FYMHhRMjdkN2xGbEVpVndiUHRE\\\nU2NOSmJkNGxwQVZFbjVSWFlqS0d5ZzdVSFUzeHhvZzU1WEJXYmU4VVJMRnFFNi0zS1hH\\\na1NBZGJrQ1EtVjJWMndOa3NYcGpGWFZYTGZuTTJ6YVJLMWNUWHotV0JTSzVsYk53VHNx\\\nZFhRZDJmYjRkZkJsVk9ocDBIRGpoaXRRQ0lWcTBPbC13TFdjYUZqa1VaQTFoTXNwT0hw\\\nZU5zWHl2MjItNWMtaV8zNHMtN0tudkNISXhBUEVJSHBLZS1DaDJ3QlRYaDloRzI5LUdZ\\\nNkVJMEJjb3dNbTVTU1V0TUxmYVRQV0x1V0U3Vno5V1BqSnoyMzc0WGNqMm9DSW1zeF9v\\\nc2NJYXpUdHFZaWYzMlAzRTlOMGE1eUZrY0RCSUdHdUZsSzAzZHZyUlhNLVlpeFZVWGFv\\\nanFWZEhPZ3ZjcWNKdEFtaXhJYnBkTWhteVA1TUFsRkN6Qi13cTkwWUNEdWMtVkpvd0FR\\\neV9vcERxT1p0WnpwakpNWVV6VktFUXo5OXlkS3diOG1Ldy1iY0ZwMXZkekkyenlDUWFk\\\nUE81VFNWazdCRklVX1IxMUNKTlVHZlVqcWhmNVJ4RkhUdzFESjI0a2V2UF9WRGFVNEZp\\\nVGs4ZTZJVWI5RGh1MG54el9oX013dEZKZzkxNUNaUFl1TlJVaE1wSkJuRHZzMm81d2Nx\\\nelcwbTJHT2U1bWJjd1lkMmxCU192NGdyZ3FjNWVKNEkxUm54RmQ0T01qbUR5NGM4N2Y3\\\nbXQxMHRWM0MyU0hUZzJ2NkVGQ2VheDA0UDJZZFNYY0IxdlpWV1NtOEI3ZWFqcmtrMFcz\\\ncjB2U0hKZ3hoWFBIV0piclh6blRFUjh3MnNrZGtUT3lMUXMwUi1aQ05aaHVwT3pfaU5p\\\nX3NFRXlmbTQxSjhBMVZNVngwMkpLWERIalg4ZmdoRE5PVkRYRmtfTzdudjRlQ3dodXFw\\\nSllIdUtKaWJGMjlrRElJY1V2N1dwNTBiaTU5VE9OQnBlaTMxMi1SQS1PaS1FWDNtakY0\\\nSGpSd1h0VzZpcTZfWHlrNHZfZWtWVWdQdnJ3ZE13UUpFY1dZMWdhRmx2d09qYzEwNFhq\\\nejFvVUZYdzhoS21lY25vSkhwU2tUY1BxdVZfLTQ3Q0hjVFlCWmZCWkpPcG56OEwxUDhL\\\nWmRGZmp6Rk9lTTBpeW9GSS1VNkVTMW1YS3FhNmx6ZjBXVlhNR1JtVGFRLTJSamI3aTdi\\\nTmNSOVNMazlxUTlhVTU4UWtjdE1jIn0",
   "encrypted_key": "y4wmof_bTqmjuLdqBgQwdO9jCX1eYh_o6ncBOKXSaMo",
   "aad": "ZXh0ZXJuYWwtYWFk",
   "iv": "sLGys7S1tre4ubq7",
   "ciphertext": "SrksVxZPdV0PSHzlGU6azIqgKCs",
-  "tag": "KwMctpSu3DPyrR_H31P8ug"
+  "tag": "zV4cSq1TtUBk5OeaDjIYfg"
 }
 ~~~
 
@@ -875,12 +888,196 @@ Flattened JWE JSON Serialization:
 
 ~~~ json
 {
-  "protected": "eyJhbGciOiJNTC1LRU0tMTAyNCtBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIiwia2VtY3Qi\\\nOiJiSk1KZ3pUVk5DNEZIQ1VjRHBMSWw1ZjVmR0pKbVhNRVRHUWF0WUM3TFMzRGIxTkpU\\\nVTEzYVZGb0QwcUhoV0tOMVJtVFo1Y05FanFzRm9VTkNjV0NLZlpCQ0hOTVdHRkk2bXl2\\\nX1czZXc1Q3FSRFF2QUtXNHpKOVhxR29VMnFiVGlUc2plSFptN2JDNWd5WDc5R1g0WFQ1\\\nZWtzQjFqSnE4NGl5SHpUaEhDMVhlcFJIMy1LU3hPd04tTlowQWZub2dtNnZLVm1iNGtu\\\nZzFrVlgtenBjbHNteXVvSWEwNVVpZWxfdnpxM0FhZnJ6OTBnem1TbmhUQmRJcEFELVkz\\\nNTJxMTZ1dy1UR0ljZkh5cW5BR0RQR2tQVjNaMkRfYkRTcWhldGZKb0tKaEVxS21OV2xr\\\nOS1ZdC03XzlMLWZxZWgydXIxeGhtOURVQUh3a0dDTUJhckFMV2JGMzl4WmljVjFIMzdl\\\naVdYWkt6azlaLW1yYkhUT3hWVGwwNWl1a21rRm9ZZFpmOVhBdTE2ejlZX2d6ZTBpVS14\\\nd3FNTE1VU3pCcVlDWWZBTE5lTTVCWC11cXZ2VEoyTkxIcnJfR21JcVh3ZjJ5bGxnMkh4\\\nU3VQMVBvaG5uNE9yVGU2VFAtb0M4Rmtsakg4WTc3WUxzUmhZWDhHbmV3VnFQMXFvbkha\\\nWlhISnc1dHhDaW5RckZrTmVoWUg5S3RseUUyUjBmdXI3VzhfYW9RVFVyOXMzeHFVU0tz\\\nT3dnTXVtMk9sTDNtRldBV1AtTE41N2xrUnlIZ0cxTVlPTzRqRjNuOVFMZU0zX2QyRnA3\\\nWFJkZEhNd1E5OVlpWWFMM2ZqWUtKYnJYUVRYZzBjaGRxaEhRdV93d1ZhOWJ3dFMySVpq\\\nWWx0VUREbXhxMy1xSll4cnF0QW52RWtQXzdENjllQ3V1cElnS2VJMjFiV0RRYVNqV1do\\\nQVVJWGxDcHo2aUFwMzZ1Q0kwcFlqN3UwMV9lTHdwbTVCRTB0Vzc2UGJRQlFiOGE2b2E1\\\nY1Y3WXdfeElrNm52bmFqUnp3WldtSG5EWVZ2OUFVdElQcHlfQWlmQ3lZVHBNV1lUcERX\\\nMzhWcGJHTXlaWU9ZV1c2SFk5Sk0yaWNlYWxtRGhqWGNDYW1OTGcyd0NJUE9MMkdWUDVv\\\nYVA4QzlGX0F1b29iSFdhRl9JOHNZQ243MmV3b2I1Qm84Ync5Q2dIOHpWN2dOMVJ1UE1T\\\nUUhiNG5zMlFFX0ZqWktIczhSV1dWd3RBdmhUUEFlbl9DeVMzNWZneFdSZXhpa1pTazhX\\\nSmhhS2IwdFRSc0NTeEp3N29rNUJmVzF5YmNOSVl2YmNCbXctaDJCRTRqLU1WbmtUVGJm\\\najBwOFRjdlZPcm1YZi05eXV2MUFjX2ZJN1hIakxfQ0RqbzlrZDJFMXZBblFxVzRSZkRy\\\nMk4wVHVvSUNkTVJ3a2pQclAwOFZidG02MTVSWVFsMHNKdXdSMFNoNG9sVTA0ZWlmMGxL\\\ndVBfdDdDYmFpajlYZnZFd1prckRiMHFnc1pDYXJHY2ZncUkyTGNRUVdvbkVvdzhjdWdS\\\nUW5ycVNockhQaktscUFORFdwWTVRT2pXMGRRTXJpUjNXcEtTRnA1MXZ5aWRyY2UteDNO\\\nUDhYaFprVGdMWEw1aW1NT0dsTWxFeDdkV2pLcXA4a0FNcjhfYU45TVEyUjJkWFBEc21k\\\nWnNJWFh4aUdnSFhxNWtOZWR5WXNpSUVrejlsUmJpUlVrU3VQcFI1XzNFQVIzWEJTcmsz\\\naHNpVHJiUjJiNDgxLVgxWHFzcmJiUkVUUENBUmZUNDhYeDd1ZXR6YUk4U1BOQnpIb2wz\\\ndE45WDJkWXZoZWk4MVBwRFdtMmw0TXg1NGNIOGlMZEx1NDl5dTh0VjhJSEtXWUpIcS1s\\\nYzRsTU56ei1sSlphU3czb0ZtVjVnWldOQ1JWYlRVWlV4b0I4NndvamZFd0Y2OUJNbHlu\\\nTExneUJQYkI1ejVTODJTMHNqVkhPUkdNVkNIdzBNMnJKZmN0LXByZGpUWmRGTXU5dW1t\\\nUmV5cmlkcWdxTS1udUhacEtZN2p5eTZ3Rzd1WXpuZ2ptSlhxVUtLRlFncTdDSVl3Q1F3\\\neUJSWEVGcjFEUXpjTW5YM2JWbWtQUF9BUGVEUGFybEpCSjNOVG11WGFLQ1dNMGZudHAx\\\nbHo5UUQ1VnhacjJ1NTVuMjNDSFNmcmRjb1B4MUkwcDJ4OUxTbncyakdSQ2JKUU5qeHR1\\\nQWpmc1BYWl92aEUzSzhwYzdhdUlqbHEtVDJiVmd2bVltSk53azg0bWhib2hPZ3c5a1pt\\\nd2JEVWtQbVRnQ2ljMnEwWkdNRVkzU1hycWNwUGFDNG5ORF8yTFVrSFFVRkktU2p2VzlT\\\ndi1LT1BoMmV5OUVBVktDdzFVWnpJV2xsa0tqcnlURXFucVJ2eHhKM3FPVnJPd3ZuVGho\\\nRFY2TmN1RERHdlBhMHM2UEY4SDhtUEJKV2dPcllVUXBNWEpNdngteUJTMmVfMzNTX1pK\\\nVEF4RFFvNE9SZFk0c3dLV3V1cFJ0YVdzWGZkdEZNUm5NaHlnVFBPWHd4UDZBQ0lFWGll\\\neTM3Mmp3dVVoMEo3ZHpndlpFMUJrS01DVjFaUGJ4NDhhZXo5X1RoX2Qwa0pEOWZxQTNt\\\nZkRDemZOdFFHRVNLdXJ3MXoxUXpTT0ItR2c0d29ycjBFdnNTRmZqTjVBaWZNLVozRkNX\\\nbEVWZUlsOGw3blh6bXNCNlB4RE16OXllX296WExUM2F5SVM0SVhyUDJaWFc0cEdkWTJ0\\\nSmMifQ",
+  "protected": "eyJhbGciOiJNTC1LRU0tMTAyNCtBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIiwiZWsiOiJi\\\nSk1KZ3pUVk5DNEZIQ1VjRHBMSWw1ZjVmR0pKbVhNRVRHUWF0WUM3TFMzRGIxTkpUVTEz\\\nYVZGb0QwcUhoV0tOMVJtVFo1Y05FanFzRm9VTkNjV0NLZlpCQ0hOTVdHRkk2bXl2X1cz\\\nZXc1Q3FSRFF2QUtXNHpKOVhxR29VMnFiVGlUc2plSFptN2JDNWd5WDc5R1g0WFQ1ZWtz\\\nQjFqSnE4NGl5SHpUaEhDMVhlcFJIMy1LU3hPd04tTlowQWZub2dtNnZLVm1iNGtuZzFr\\\nVlgtenBjbHNteXVvSWEwNVVpZWxfdnpxM0FhZnJ6OTBnem1TbmhUQmRJcEFELVkzNTJx\\\nMTZ1dy1UR0ljZkh5cW5BR0RQR2tQVjNaMkRfYkRTcWhldGZKb0tKaEVxS21OV2xrOS1Z\\\ndC03XzlMLWZxZWgydXIxeGhtOURVQUh3a0dDTUJhckFMV2JGMzl4WmljVjFIMzdlaVdY\\\nWkt6azlaLW1yYkhUT3hWVGwwNWl1a21rRm9ZZFpmOVhBdTE2ejlZX2d6ZTBpVS14d3FN\\\nTE1VU3pCcVlDWWZBTE5lTTVCWC11cXZ2VEoyTkxIcnJfR21JcVh3ZjJ5bGxnMkh4U3VQ\\\nMVBvaG5uNE9yVGU2VFAtb0M4Rmtsakg4WTc3WUxzUmhZWDhHbmV3VnFQMXFvbkhaWlhI\\\nSnc1dHhDaW5RckZrTmVoWUg5S3RseUUyUjBmdXI3VzhfYW9RVFVyOXMzeHFVU0tzT3dn\\\nTXVtMk9sTDNtRldBV1AtTE41N2xrUnlIZ0cxTVlPTzRqRjNuOVFMZU0zX2QyRnA3WFJk\\\nZEhNd1E5OVlpWWFMM2ZqWUtKYnJYUVRYZzBjaGRxaEhRdV93d1ZhOWJ3dFMySVpqWWx0\\\nVUREbXhxMy1xSll4cnF0QW52RWtQXzdENjllQ3V1cElnS2VJMjFiV0RRYVNqV1doQVVJ\\\nWGxDcHo2aUFwMzZ1Q0kwcFlqN3UwMV9lTHdwbTVCRTB0Vzc2UGJRQlFiOGE2b2E1Y1Y3\\\nWXdfeElrNm52bmFqUnp3WldtSG5EWVZ2OUFVdElQcHlfQWlmQ3lZVHBNV1lUcERXMzhW\\\ncGJHTXlaWU9ZV1c2SFk5Sk0yaWNlYWxtRGhqWGNDYW1OTGcyd0NJUE9MMkdWUDVvYVA4\\\nQzlGX0F1b29iSFdhRl9JOHNZQ243MmV3b2I1Qm84Ync5Q2dIOHpWN2dOMVJ1UE1TUUhi\\\nNG5zMlFFX0ZqWktIczhSV1dWd3RBdmhUUEFlbl9DeVMzNWZneFdSZXhpa1pTazhXSmhh\\\nS2IwdFRSc0NTeEp3N29rNUJmVzF5YmNOSVl2YmNCbXctaDJCRTRqLU1WbmtUVGJmajBw\\\nOFRjdlZPcm1YZi05eXV2MUFjX2ZJN1hIakxfQ0RqbzlrZDJFMXZBblFxVzRSZkRyMk4w\\\nVHVvSUNkTVJ3a2pQclAwOFZidG02MTVSWVFsMHNKdXdSMFNoNG9sVTA0ZWlmMGxLdVBf\\\ndDdDYmFpajlYZnZFd1prckRiMHFnc1pDYXJHY2ZncUkyTGNRUVdvbkVvdzhjdWdSUW5y\\\ncVNockhQaktscUFORFdwWTVRT2pXMGRRTXJpUjNXcEtTRnA1MXZ5aWRyY2UteDNOUDhY\\\naFprVGdMWEw1aW1NT0dsTWxFeDdkV2pLcXA4a0FNcjhfYU45TVEyUjJkWFBEc21kWnNJ\\\nWFh4aUdnSFhxNWtOZWR5WXNpSUVrejlsUmJpUlVrU3VQcFI1XzNFQVIzWEJTcmszaHNp\\\nVHJiUjJiNDgxLVgxWHFzcmJiUkVUUENBUmZUNDhYeDd1ZXR6YUk4U1BOQnpIb2wzdE45\\\nWDJkWXZoZWk4MVBwRFdtMmw0TXg1NGNIOGlMZEx1NDl5dTh0VjhJSEtXWUpIcS1sYzRs\\\nTU56ei1sSlphU3czb0ZtVjVnWldOQ1JWYlRVWlV4b0I4NndvamZFd0Y2OUJNbHluTExn\\\neUJQYkI1ejVTODJTMHNqVkhPUkdNVkNIdzBNMnJKZmN0LXByZGpUWmRGTXU5dW1tUmV5\\\ncmlkcWdxTS1udUhacEtZN2p5eTZ3Rzd1WXpuZ2ptSlhxVUtLRlFncTdDSVl3Q1F3eUJS\\\nWEVGcjFEUXpjTW5YM2JWbWtQUF9BUGVEUGFybEpCSjNOVG11WGFLQ1dNMGZudHAxbHo5\\\nUUQ1VnhacjJ1NTVuMjNDSFNmcmRjb1B4MUkwcDJ4OUxTbncyakdSQ2JKUU5qeHR1QWpm\\\nc1BYWl92aEUzSzhwYzdhdUlqbHEtVDJiVmd2bVltSk53azg0bWhib2hPZ3c5a1ptd2JE\\\nVWtQbVRnQ2ljMnEwWkdNRVkzU1hycWNwUGFDNG5ORF8yTFVrSFFVRkktU2p2VzlTdi1L\\\nT1BoMmV5OUVBVktDdzFVWnpJV2xsa0tqcnlURXFucVJ2eHhKM3FPVnJPd3ZuVGhoRFY2\\\nTmN1RERHdlBhMHM2UEY4SDhtUEJKV2dPcllVUXBNWEpNdngteUJTMmVfMzNTX1pKVEF4\\\nRFFvNE9SZFk0c3dLV3V1cFJ0YVdzWGZkdEZNUm5NaHlnVFBPWHd4UDZBQ0lFWGlleTM3\\\nMmp3dVVoMEo3ZHpndlpFMUJrS01DVjFaUGJ4NDhhZXo5X1RoX2Qwa0pEOWZxQTNtZkRD\\\nemZOdFFHRVNLdXJ3MXoxUXpTT0ItR2c0d29ycjBFdnNTRmZqTjVBaWZNLVozRkNXbEVW\\\nZUlsOGw3blh6bXNCNlB4RE16OXllX296WExUM2F5SVM0SVhyUDJaWFc0cEdkWTJ0SmMi\\\nfQ",
   "encrypted_key": "DVOhPU21CuUajdOnwCk1jmejdipeDMDhhbaZPmFrFh5VaHlWJ1dlQA",
   "aad": "ZXh0ZXJuYWwtYWFk",
   "iv": "sLGys7S1tre4ubq7",
   "ciphertext": "3eFYygOCnqfnw-jJzmOoB2ieHG4",
-  "tag": "rxI3XvqGAbQC9cnLJaQ8jQ"
+  "tag": "BY13Snwgm8MX2C22zgh68Q"
+}
+~~~
+
+## Compact JWE Serialization
+{: numbered="false"}
+
+The following examples show Compact JWE Serialization for one Direct Key
+Agreement algorithm and one Key Agreement with Key Wrapping algorithm.
+
+
+### ML-KEM-512
+{: numbered="false"}
+
+~~~ text
+eyJhbGciOiJNTC1LRU0tNTEyIiwiZW5jIjoiQTEyOEdDTSIsImVrIjoiRUcycm5fRW11\
+M05YVGNsaDZOR3hNYVFDcGVZeERtM1ZXMEJxOGJ3elBXM0hQM1hjbmdHZVFZaFl3bXNf\
+SEJXUFpzNk1DZW12ZF94djdVX2dPOXQ0Y1VIQm15OTNSaWxuOVFNNXNpeDZEODVwRlRY\
+RU0yaUdxRTdEWWgxX3lsVjktZldYNGRhM19wZjlXVTd1aV82bWwzSno0UG5qYklvS2lF\
+VEI1Y0diUmFJNk8tTkVDaE82LWlKajFoNUFaQ1NSLWJnaktNMTBERXdRUHpOREJmT3BQ\
+cjdJSFQ4cFBpelk2WG5mblNaRlQxY3ZiTFA4blNYSkNiVmFoMkJkS0NKTkFWT2FfN0gt\
+dnlpMHVYRzlZSjZEYWFYbm90dmp1UHRsdzVtRFVkYUlFdWNxNnM1MzVvMnVOaTBMQzhE\
+X3dlOHRwT042YTNqNWJDVWFnS3BxdEduejdrbUJfVHZNd0ZLZTRrcXZhZ3pCbmRLTkVy\
+OFZxaWlMZHlMMzdmbWhjY0NMQTlZaUFFY2NrOHhDUHdCdVpDUFR3c2xsX2hLcjBBSUtH\
+Sm13WklxUVdmUXE1UHk0OWU2NFFqbHU5ZzhuNlRFazFKMXRQakdGdFp4Z0lsTFR4SFEz\
+eEF4YWcyYnEzNWxhcHdVY0FZSlhsQkxPdW9BektNU19VT0d5bjh0RWhtamN0Z0YyNXhG\
+NEZ4elYyOGtxUUhncUp3VHI3MjZjcVB3QlAwSG0yamE4eExVU29vSUM5TklvWlRmSWI4\
+T3k3ZkVxNE5PNzh4QnZGOFlsdU1wZC1fMkJpdU9QcXpENnE0TmFuTzlJVm9kTlhsMF9z\
+ZW5zOER0VWhnTEszSG4yREYtMTFCQlRqVkdPRmFFT2s5MmticDRjRFU3WTlhR3VNT3pN\
+SWM1LXJFdEZtYXZuQTRtYnBOdGlkMjQ3VVpFalVCb0xTY3dTM1pnOG9CUnJ0a2dUNHZS\
+eTF6bnM5ek1WOVV3dFlpeDByTE1rekVZbndsb3NoR2FTSFRwRFh0NFdoZkhXR2pYMFk4\
+RHNsY3lfMUN6Zzg5X1pQMUJjVXB3OTVqdFVUWlFfUzlPQTFRQWR0WE9YY1lhSlNTQ3RU\
+LUg4cUdrcl92N3NnX3hWLTE0SzhBc0twU1JQa1FhQ1JKS3FaRVN3SDV5dVpva2pQdHFt\
+Yk14dkZndmhNbGlSTmtGRkRYaWdhSHIwcUxudXlFUktFZjY2RUdaWTUxUWp6aUVaQ0ZQ\
+TmpLeG9vd21NLTVwcTBWSDR0d3JfNGZHWVJUTUJHSV8waVNGYnNpQU1QbjF4VEt0cER3\
+THdLV2MzZmJwbFRnTXkxWnltRC1OckxXVXpzTng3WVhqYUktNTBjUjcwa3J3YiJ9..sL\
+Gys7S1tre4ubq7.2_fxcDfSskbGhZa8P5jG8Vwio8A.28hz43tsdXzRJbtoukeESA
+~~~
+
+### ML-KEM-512+A128KW
+{: numbered="false"}
+
+~~~ text
+eyJhbGciOiJNTC1LRU0tNTEyK0ExMjhLVyIsImVuYyI6IkExMjhHQ00iLCJlayI6IkVH\
+MnJuX0VtdTNOWFRjbGg2Tkd4TWFRQ3BlWXhEbTNWVzBCcThid3pQVzNIUDNYY25nR2VR\
+WWhZd21zX0hCV1BaczZNQ2VtdmRfeHY3VV9nTzl0NGNVSEJteTkzUmlsbjlRTTVzaXg2\
+RDg1cEZUWEVNMmlHcUU3RFloMV95bFY5LWZXWDRkYTNfcGY5V1U3dWlfNm1sM0p6NFBu\
+amJJb0tpRVRCNWNHYlJhSTZPLU5FQ2hPNi1pSmoxaDVBWkNTUi1iZ2pLTTEwREV3UVB6\
+TkRCZk9wUHI3SUhUOHBQaXpZNlhuZm5TWkZUMWN2YkxQOG5TWEpDYlZhaDJCZEtDSk5B\
+Vk9hXzdILXZ5aTB1WEc5WUo2RGFhWG5vdHZqdVB0bHc1bURVZGFJRXVjcTZzNTM1bzJ1\
+TmkwTEM4RF93ZTh0cE9ONmEzajViQ1VhZ0twcXRHbno3a21CX1R2TXdGS2U0a3F2YWd6\
+Qm5kS05FcjhWcWlpTGR5TDM3Zm1oY2NDTEE5WWlBRWNjazh4Q1B3QnVaQ1BUd3NsbF9o\
+S3IwQUlLR0ptd1pJcVFXZlFxNVB5NDllNjRRamx1OWc4bjZURWsxSjF0UGpHRnRaeGdJ\
+bExUeEhRM3hBeGFnMmJxMzVsYXB3VWNBWUpYbEJMT3VvQXpLTVNfVU9HeW44dEVobWpj\
+dGdGMjV4RjRGeHpWMjhrcVFIZ3FKd1RyNzI2Y3FQd0JQMEhtMmphOHhMVVNvb0lDOU5J\
+b1pUZkliOE95N2ZFcTROTzc4eEJ2RjhZbHVNcGQtXzJCaXVPUHF6RDZxNE5hbk85SVZv\
+ZE5YbDBfc2VuczhEdFVoZ0xLM0huMkRGLTExQkJUalZHT0ZhRU9rOTJrYnA0Y0RVN1k5\
+YUd1TU96TUljNS1yRXRGbWF2bkE0bWJwTnRpZDI0N1VaRWpVQm9MU2N3UzNaZzhvQlJy\
+dGtnVDR2Unkxem5zOXpNVjlVd3RZaXgwckxNa3pFWW53bG9zaEdhU0hUcERYdDRXaGZI\
+V0dqWDBZOERzbGN5XzFDemc4OV9aUDFCY1Vwdzk1anRVVFpRX1M5T0ExUUFkdFhPWGNZ\
+YUpTU0N0VC1IOHFHa3JfdjdzZ194Vi0xNEs4QXNLcFNSUGtRYUNSSktxWkVTd0g1eXVa\
+b2tqUHRxbWJNeHZGZ3ZoTWxpUk5rRkZEWGlnYUhyMHFMbnV5RVJLRWY2NkVHWlk1MVFq\
+emlFWkNGUE5qS3hvb3dtTS01cHEwVkg0dHdyXzRmR1lSVE1CR0lfMGlTRmJzaUFNUG4x\
+eFRLdHBEd0x3S1djM2ZicGxUZ015MVp5bUQtTnJMV1V6c054N1lYamFJLTUwY1I3MGty\
+d2IifQ.XuIrp6nvQGFRFzojRkZ-oxOxbDvOob9h.sLGys7S1tre4ubq7.Uv_qVKYs3G-\
+hDNoDdxYWGFm6Nec.OsaatnS3_9tZtSpUr2PXMQ
+~~~
+
+## General JWE JSON Serialization with Multiple Recipients
+{: numbered="false"}
+
+This vector uses `ML-KEM-512+A128KW` with `A128GCM`.
+The two recipients use different ML-KEM public keys and different deterministic
+KEM encapsulation seeds. The same CEK is wrapped independently for each
+recipient.
+
+Recipient 0 Public JWK:
+
+~~~ json
+{
+  "kty": "AKP",
+  "alg": "ML-KEM-512",
+  "pub": "t_mc34cEvCrOhiUbRjmmghJdonimWRiF1pdjsSGfiqWLFlR7FzF8hXYEG9HJ-FNHeyS3F4tJ1MsXO2qOOJxNbcGJghOhhHyXY3Fw09UPLHMc4FoeddoD3Lki3LmRb2cjuAKBpSQNQeLH7ObE0_eSDxFCeTxsKjYny0e6JtBj2LhAVIyKLjhFYsu9B4MuuimhbTHCysx4l0YegqI98wjB7ddEMDJJgSsnjuoT80MiZvA3iGCd5uMjEJDBdazPwGObqlGP70DNC8sKjLKYN4g9BwO1fTBZY9wfS-lwQghko3ExavKwxiUnO3nPoiVwtSq1VWEFVbyh2WBHdTWehDaeHUxHzjAaDcWgjnqdQRaen6BIZnVr-Bh3qNVDvTk2LnxsC2IqIfsu8CIgrYSY3nKN84k9aTSd1RE64OuCKYNVwrsnQsRWvkpspvMYfexp9LOkMNVAK5VwC2seZKNy7OyklIFpyUwXZPqItjbD6vYLotyQv9wg1lyoDehrl1F0_kyKYfOMbpFPdbgc6tI_nWg130QxgEsSdECTQCyWpbN7eXuQ5Xddg5CRvAeUzxXJzWF1qnPLhwAh3igm-lCY95nEdTKUBiBfsHyyS4Js1GlcwzyDA4FZsAUYldmpStK5UZGUWEZFSQW0I9UG3hsvkgp4mscgF7iYgJMtC_sX0oEampUJ6wkb0eaIo3yZkjdhRptOKGG-ZmCibvYzlPoefnZuHqBS8wSps3aDLPm77zi_eDLO6NoKe4K_fYobvss-mkQVI0nOsGsH4UhUCNInTHIaJttlIzPAYDa02tE4nZi9m7R29IUzKtghgdCN1AeD5OJRxJVFQ-el1DwJ-RsqcNu8NtCx1hmgdrYVlFUB_DXERMgQCAu7AkMFYAU79iAlPym8lCM0fqiK2NqBM1fHl3dWyjPBysNnSffGo8iJsNctZgdAhZN3BwgSkaOB2Ea0kaMVAyUg8QqKEWS8FCU-NJIQ0SUXixidd5Nvp0iIFitPWUFK2lh4_8kIh6EfJoZddCKBN3UB3V5heTKuz3edcP77m-acNqUvKjVebxKz9oSQpKA"
+}
+~~~
+
+Recipient 0 Private JWK:
+
+~~~ json
+{
+  "kty": "AKP",
+  "alg": "ML-KEM-512",
+  "pub": "t_mc34cEvCrOhiUbRjmmghJdonimWRiF1pdjsSGfiqWLFlR7FzF8hXYEG9HJ-FNHeyS3F4tJ1MsXO2qOOJxNbcGJghOhhHyXY3Fw09UPLHMc4FoeddoD3Lki3LmRb2cjuAKBpSQNQeLH7ObE0_eSDxFCeTxsKjYny0e6JtBj2LhAVIyKLjhFYsu9B4MuuimhbTHCysx4l0YegqI98wjB7ddEMDJJgSsnjuoT80MiZvA3iGCd5uMjEJDBdazPwGObqlGP70DNC8sKjLKYN4g9BwO1fTBZY9wfS-lwQghko3ExavKwxiUnO3nPoiVwtSq1VWEFVbyh2WBHdTWehDaeHUxHzjAaDcWgjnqdQRaen6BIZnVr-Bh3qNVDvTk2LnxsC2IqIfsu8CIgrYSY3nKN84k9aTSd1RE64OuCKYNVwrsnQsRWvkpspvMYfexp9LOkMNVAK5VwC2seZKNy7OyklIFpyUwXZPqItjbD6vYLotyQv9wg1lyoDehrl1F0_kyKYfOMbpFPdbgc6tI_nWg130QxgEsSdECTQCyWpbN7eXuQ5Xddg5CRvAeUzxXJzWF1qnPLhwAh3igm-lCY95nEdTKUBiBfsHyyS4Js1GlcwzyDA4FZsAUYldmpStK5UZGUWEZFSQW0I9UG3hsvkgp4mscgF7iYgJMtC_sX0oEampUJ6wkb0eaIo3yZkjdhRptOKGG-ZmCibvYzlPoefnZuHqBS8wSps3aDLPm77zi_eDLO6NoKe4K_fYobvss-mkQVI0nOsGsH4UhUCNInTHIaJttlIzPAYDa02tE4nZi9m7R29IUzKtghgdCN1AeD5OJRxJVFQ-el1DwJ-RsqcNu8NtCx1hmgdrYVlFUB_DXERMgQCAu7AkMFYAU79iAlPym8lCM0fqiK2NqBM1fHl3dWyjPBysNnSffGo8iJsNctZgdAhZN3BwgSkaOB2Ea0kaMVAyUg8QqKEWS8FCU-NJIQ0SUXixidd5Nvp0iIFitPWUFK2lh4_8kIh6EfJoZddCKBN3UB3V5heTKuz3edcP77m-acNqUvKjVebxKz9oSQpKA",
+  "priv": "EBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4_QEFCQ0RFRkdISUpLTE1OTw"
+}
+~~~
+
+Recipient 1 Public JWK:
+
+~~~ json
+{
+  "kty": "AKP",
+  "alg": "ML-KEM-512",
+  "pub": "X1QIpHdTeDYQq_Vr0-Uu6WeUFaAoNlUS-2dmCmmn0LSx7sawOupnWqorvqp0giCcdtWfoZebHDSFSdekt0ZOBQNVbxKNUuJnuuVvNtqNoaqTDSRNgDdn0uzGNSFgxWuhP5RPcOJUuWhsdVmc2Pg4RRZEIegdj1FTU-V9WtiEL1Qn5XkOkZkOs4fMLcNUeDVzeQcb-fnMzGBmIIWoiOZm4jgtZfNxjcmARvE4xrFQiGXJNRsnePzE6vh-CzNshoFfCNog4GBFQjmzD1tXOFd6b5WX6jAOBCCP1KZL5YgVJilmH7qFglcJ50cuRVVJphvLNFwbHfSmejnEVPkhd1BBOLMZCtMe1VqSuDUwrnYkFVao91l9w2ugtpjOF3a2E0qcJHM2UxqU7HTGzNQ2bxTFKWqUu9lsfRUhLWoP-7lsUFark-E_tvCggxsAaUytWBvJyAtOS9cmY5lyW_sSNXoyBuiJqdTKcpCru7A2InItedSonhuxL5p6q1gLVOxyo0pAUjEvTukCYKE70uTOeIteW9aOfKa84MMP9SHMR0k2vuZCl_gKaEZwMiAxw_JkEBQGHnSr4-ckYYVyZtwQxeK0LRMjnIUWRsx5nbnH-McI56OnqpSw7hK1-WMU9NYsWIYUsSQkrEKS8VVrxmSe5OE2koQZhha-l8qVXKYY6yLAAEdt1QCmUWeByaGo2zUW8UiZK9CHakTDwpnMesCIGHImJZZ3eFuHCDqIMdhoY8htiYpONHAqvmCKJww6dlpub9JsqeuKVbRIpiUPCCWMh4lzw3ognuM0p2UrvwYkdVBd0uu5VhigQUg3d4pMSwC9HkNeg7MCwRfCwaJT1ttj9poQCkZww6hQebd8-YsJFlEGOMxBMSKuMpWWpGbFV-JkvdEsB2tooPi2ddJhF5wDMPp6TTAICgPLiUymjPG2LTaWW4J5OgxXUAVJUau1Mxg12CNvIycVQhG631Z0mwOT80wj5DSUO3JtzhaQd3Ssq-S7SzwE_ecJNYhwfjODCzdmSzd7TC313rFgWoxi8XlfIYkqi4uquOGd3dTNW6TPnT74aVA"
+}
+~~~
+
+Recipient 1 Private JWK:
+
+~~~ json
+{
+  "kty": "AKP",
+  "alg": "ML-KEM-512",
+  "pub": "X1QIpHdTeDYQq_Vr0-Uu6WeUFaAoNlUS-2dmCmmn0LSx7sawOupnWqorvqp0giCcdtWfoZebHDSFSdekt0ZOBQNVbxKNUuJnuuVvNtqNoaqTDSRNgDdn0uzGNSFgxWuhP5RPcOJUuWhsdVmc2Pg4RRZEIegdj1FTU-V9WtiEL1Qn5XkOkZkOs4fMLcNUeDVzeQcb-fnMzGBmIIWoiOZm4jgtZfNxjcmARvE4xrFQiGXJNRsnePzE6vh-CzNshoFfCNog4GBFQjmzD1tXOFd6b5WX6jAOBCCP1KZL5YgVJilmH7qFglcJ50cuRVVJphvLNFwbHfSmejnEVPkhd1BBOLMZCtMe1VqSuDUwrnYkFVao91l9w2ugtpjOF3a2E0qcJHM2UxqU7HTGzNQ2bxTFKWqUu9lsfRUhLWoP-7lsUFark-E_tvCggxsAaUytWBvJyAtOS9cmY5lyW_sSNXoyBuiJqdTKcpCru7A2InItedSonhuxL5p6q1gLVOxyo0pAUjEvTukCYKE70uTOeIteW9aOfKa84MMP9SHMR0k2vuZCl_gKaEZwMiAxw_JkEBQGHnSr4-ckYYVyZtwQxeK0LRMjnIUWRsx5nbnH-McI56OnqpSw7hK1-WMU9NYsWIYUsSQkrEKS8VVrxmSe5OE2koQZhha-l8qVXKYY6yLAAEdt1QCmUWeByaGo2zUW8UiZK9CHakTDwpnMesCIGHImJZZ3eFuHCDqIMdhoY8htiYpONHAqvmCKJww6dlpub9JsqeuKVbRIpiUPCCWMh4lzw3ognuM0p2UrvwYkdVBd0uu5VhigQUg3d4pMSwC9HkNeg7MCwRfCwaJT1ttj9poQCkZww6hQebd8-YsJFlEGOMxBMSKuMpWWpGbFV-JkvdEsB2tooPi2ddJhF5wDMPp6TTAICgPLiUymjPG2LTaWW4J5OgxXUAVJUau1Mxg12CNvIycVQhG631Z0mwOT80wj5DSUO3JtzhaQd3Ssq-S7SzwE_ecJNYhwfjODCzdmSzd7TC313rFgWoxi8XlfIYkqi4uquOGd3dTNW6TPnT74aVA",
+  "priv": "QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1-fw"
+}
+~~~
+
+General JWE JSON Serialization:
+
+~~~ json
+{
+  "protected": "eyJhbGciOiJNTC1LRU0tNTEyK0ExMjhLVyIsImVuYyI6IkExMjhHQ00ifQ",
+  "recipients": [
+    {
+      "header": {
+        "ek": "EG2rn_Emu3NXTclh6NGxMaQCpeYxDm3VW0Bq8bwzPW3HP3XcngGeQYhYwms_HBWPZs6M\\\nCemvd_xv7U_gO9t4cUHBmy93Riln9QM5six6D85pFTXEM2iGqE7DYh1_ylV9-fWX4da3\\\n_pf9WU7ui_6ml3Jz4PnjbIoKiETB5cGbRaI6O-NEChO6-iJj1h5AZCSR-bgjKM10DEwQ\\\nPzNDBfOpPr7IHT8pPizY6XnfnSZFT1cvbLP8nSXJCbVah2BdKCJNAVOa_7H-vyi0uXG9\\\nYJ6DaaXnotvjuPtlw5mDUdaIEucq6s535o2uNi0LC8D_we8tpON6a3j5bCUagKpqtGnz\\\n7kmB_TvMwFKe4kqvagzBndKNEr8VqiiLdyL37fmhccCLA9YiAEcck8xCPwBuZCPTwsll\\\n_hKr0AIKGJmwZIqQWfQq5Py49e64Qjlu9g8n6TEk1J1tPjGFtZxgIlLTxHQ3xAxag2bq\\\n35lapwUcAYJXlBLOuoAzKMS_UOGyn8tEhmjctgF25xF4FxzV28kqQHgqJwTr726cqPwB\\\nP0Hm2ja8xLUSooIC9NIoZTfIb8Oy7fEq4NO78xBvF8YluMpd-_2BiuOPqzD6q4NanO9I\\\nVodNXl0_sens8DtUhgLK3Hn2DF-11BBTjVGOFaEOk92kbp4cDU7Y9aGuMOzMIc5-rEtF\\\nmavnA4mbpNtid247UZEjUBoLScwS3Zg8oBRrtkgT4vRy1zns9zMV9UwtYix0rLMkzEYn\\\nwloshGaSHTpDXt4WhfHWGjX0Y8Dslcy_1Czg89_ZP1BcUpw95jtUTZQ_S9OA1QAdtXOX\\\ncYaJSSCtT-H8qGkr_v7sg_xV-14K8AsKpSRPkQaCRJKqZESwH5yuZokjPtqmbMxvFgvh\\\nMliRNkFFDXigaHr0qLnuyERKEf66EGZY51QjziEZCFPNjKxoowmM-5pq0VH4twr_4fGY\\\nRTMBGI_0iSFbsiAMPn1xTKtpDwLwKWc3fbplTgMy1ZymD-NrLWUzsNx7YXjaI-50cR70\\\nkrwb"
+      },
+      "encrypted_key": "XuIrp6nvQGFRFzojRkZ-oxOxbDvOob9h"
+    },
+    {
+      "header": {
+        "ek": "3nj_a4ArkyUiAeMsBTTc9sudvskEST4HZtAhbqOQmmqGUoOmnVrJAw2_gZUr37QH97p4\\\njcG7EqeNkCkGcDiOZOKzYYxmF1WdViG4JZyGb5BpxNX82-01-OY_0bexqZ00RdCXUulB\\\ncjyIZYwPEJaEJz_mnzQNW-xHR1hDQstljSz58DR2SQWggz85p0_JkZiquww2sWYzGp4a\\\nPC8sPQ2dKQz6jLAk2q02cDI2BT6Pzd9AgzGhpi8aZZnApzsyClB3tyQZvp8qGJLoMiL3\\\nzhpk8wO80IjasqDyTwzcolQQ9BwHWRZZpExbUPeYz51dVYN6hAhfPs7T2Yc9S-FYOb1O\\\nBGnKTIHKmzml-f9bnxDgcRnfD9O3PuzWvlSmLBKTzzijLiUgUTMLsvdbxGu2FbT6FK3m\\\nGUxKTj8Zntrq1Yvuwto2Is_6up4c1_X1ouqn9qn_dRNsiOoHAVYGBP_5eoVCMOmEubW4\\\nW6YqiBuYYGxM8C5rD2Kx4xaSris3jzSL_211P7B5w-EXq8AyAVHfTM3mjHf2wXakEnIF\\\n1xJA7UDi_bJ4_J1Bq5IyueO10dBlTrXYpxfAGaEpNm2vc0cpANGF5LcFTX6UARhmcOSM\\\n21d8mbRzrBdKasknQij8NC19u19qENhRJQkVgpdMj4Sct_NC4hWEnQpbd--J_Y6PH9vM\\\nZo27D7y8COGInt5XwB0bCQKMma8BTwCgVu-J9_Ft8cK8VGLGDiJhIZgGszdg26Z_CTdK\\\n1vNO9q2lRSXQ9LUnNPRu8v2STBxiiqoSwNTNPejCzxbtAmV9gv8ueCHh_MI0nn4O3RTf\\\nNy4Bgo4rV1LEGiBJVmy6CJfABJyGh-WDq8iogpCy0BJTKtpMGeBuiNM1s08JV04nthd9\\\nR4vaHCXCGsHIRt671FjusEGHNzf_xnGVo2xJ7jOD32iw2VZ5Q_N75koD9gr3DzNT3dHT\\\niHYpwcLFUWxZ1slMnM-SAsAUbRB6cdCe-nZH5dJN0Z-MX1zvCMFPowTgfQ7I8pTMzzyM\\\nokO5"
+      },
+      "encrypted_key": "5ESSVsKVDAVTUvTaGDQfoaEoKlFpN5-_"
+    }
+  ],
+  "aad": "ZXh0ZXJuYWwtYWFk",
+  "iv": "sLGys7S1tre4ubq7",
+  "ciphertext": "Uv_qVKYs3G-hDNoDdxYWGFm6Nec",
+  "tag": "jGzjTxEKoGGupJY2AeyZBw"
+}
+~~~
+
+## KDF-Only Test Vectors
+{: numbered="false"}
+
+The following vectors isolate the KMAC256-based KDF from JWE content encryption
+and key wrapping. `OtherInfo` is the byte string
+`AlgorithmID || SuppPubInfo || SuppPrivInfo`, where `AlgorithmID` is a
+32-bit big-endian length followed by the ASCII algorithm identifier,
+`SuppPubInfo` is the 32-bit big-endian output length in bits, and
+`SuppPrivInfo` is empty in these vectors.
+
+### ML-KEM-512
+{: numbered="false"}
+
+~~~ json
+{
+  "alg": "ML-KEM-512",
+  "enc": "A128GCM",
+  "algorithm_id": "A128GCM",
+  "output_length_bits": 128,
+  "kem_ciphertext": "EG2rn_Emu3NXTclh6NGxMaQCpeYxDm3VW0Bq8bwzPW3HP3XcngGeQYhYwms_HBWPZs6MCemvd_xv7U_gO9t4cUHBmy93Riln9QM5six6D85pFTXEM2iGqE7DYh1_ylV9-fWX4da3_pf9WU7ui_6ml3Jz4PnjbIoKiETB5cGbRaI6O-NEChO6-iJj1h5AZCSR-bgjKM10DEwQPzNDBfOpPr7IHT8pPizY6XnfnSZFT1cvbLP8nSXJCbVah2BdKCJNAVOa_7H-vyi0uXG9YJ6DaaXnotvjuPtlw5mDUdaIEucq6s535o2uNi0LC8D_we8tpON6a3j5bCUagKpqtGnz7kmB_TvMwFKe4kqvagzBndKNEr8VqiiLdyL37fmhccCLA9YiAEcck8xCPwBuZCPTwsll_hKr0AIKGJmwZIqQWfQq5Py49e64Qjlu9g8n6TEk1J1tPjGFtZxgIlLTxHQ3xAxag2bq35lapwUcAYJXlBLOuoAzKMS_UOGyn8tEhmjctgF25xF4FxzV28kqQHgqJwTr726cqPwBP0Hm2ja8xLUSooIC9NIoZTfIb8Oy7fEq4NO78xBvF8YluMpd-_2BiuOPqzD6q4NanO9IVodNXl0_sens8DtUhgLK3Hn2DF-11BBTjVGOFaEOk92kbp4cDU7Y9aGuMOzMIc5-rEtFmavnA4mbpNtid247UZEjUBoLScwS3Zg8oBRrtkgT4vRy1zns9zMV9UwtYix0rLMkzEYnwloshGaSHTpDXt4WhfHWGjX0Y8Dslcy_1Czg89_ZP1BcUpw95jtUTZQ_S9OA1QAdtXOXcYaJSSCtT-H8qGkr_v7sg_xV-14K8AsKpSRPkQaCRJKqZESwH5yuZokjPtqmbMxvFgvhMliRNkFFDXigaHr0qLnuyERKEf66EGZY51QjziEZCFPNjKxoowmM-5pq0VH4twr_4fGYRTMBGI_0iSFbsiAMPn1xTKtpDwLwKWc3fbplTgMy1ZymD-NrLWUzsNx7YXjaI-50cR70krwb",
+  "shared_secret": "d603ff67831ffb819d62f296918ae7cf9a63ff6d0157dbd4d396bfb4af5c4509",
+  "other_info": "000000074131323847434d00000080",
+  "supp_priv_info": "",
+  "derived_key": "288b97113bfc8403c34a09a505f1102e"
+}
+~~~
+
+### ML-KEM-512+A128KW
+{: numbered="false"}
+
+~~~ json
+{
+  "alg": "ML-KEM-512+A128KW",
+  "enc": "A128GCM",
+  "algorithm_id": "ML-KEM-512+A128KW",
+  "output_length_bits": 128,
+  "kem_ciphertext": "EG2rn_Emu3NXTclh6NGxMaQCpeYxDm3VW0Bq8bwzPW3HP3XcngGeQYhYwms_HBWPZs6MCemvd_xv7U_gO9t4cUHBmy93Riln9QM5six6D85pFTXEM2iGqE7DYh1_ylV9-fWX4da3_pf9WU7ui_6ml3Jz4PnjbIoKiETB5cGbRaI6O-NEChO6-iJj1h5AZCSR-bgjKM10DEwQPzNDBfOpPr7IHT8pPizY6XnfnSZFT1cvbLP8nSXJCbVah2BdKCJNAVOa_7H-vyi0uXG9YJ6DaaXnotvjuPtlw5mDUdaIEucq6s535o2uNi0LC8D_we8tpON6a3j5bCUagKpqtGnz7kmB_TvMwFKe4kqvagzBndKNEr8VqiiLdyL37fmhccCLA9YiAEcck8xCPwBuZCPTwsll_hKr0AIKGJmwZIqQWfQq5Py49e64Qjlu9g8n6TEk1J1tPjGFtZxgIlLTxHQ3xAxag2bq35lapwUcAYJXlBLOuoAzKMS_UOGyn8tEhmjctgF25xF4FxzV28kqQHgqJwTr726cqPwBP0Hm2ja8xLUSooIC9NIoZTfIb8Oy7fEq4NO78xBvF8YluMpd-_2BiuOPqzD6q4NanO9IVodNXl0_sens8DtUhgLK3Hn2DF-11BBTjVGOFaEOk92kbp4cDU7Y9aGuMOzMIc5-rEtFmavnA4mbpNtid247UZEjUBoLScwS3Zg8oBRrtkgT4vRy1zns9zMV9UwtYix0rLMkzEYnwloshGaSHTpDXt4WhfHWGjX0Y8Dslcy_1Czg89_ZP1BcUpw95jtUTZQ_S9OA1QAdtXOXcYaJSSCtT-H8qGkr_v7sg_xV-14K8AsKpSRPkQaCRJKqZESwH5yuZokjPtqmbMxvFgvhMliRNkFFDXigaHr0qLnuyERKEf66EGZY51QjziEZCFPNjKxoowmM-5pq0VH4twr_4fGYRTMBGI_0iSFbsiAMPn1xTKtpDwLwKWc3fbplTgMy1ZymD-NrLWUzsNx7YXjaI-50cR70krwb",
+  "shared_secret": "d603ff67831ffb819d62f296918ae7cf9a63ff6d0157dbd4d396bfb4af5c4509",
+  "other_info": "000000114d4c2d4b454d2d3531322b413132384b5700000080",
+  "supp_priv_info": "",
+  "derived_key": "d1d70bb05905ada7139bf961a71223a6"
 }
 ~~~
 
