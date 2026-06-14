@@ -446,15 +446,6 @@ intermediate values through APIs, logs, errors, or side channels.
 
 ## JOSE
 
-The following entry is added to the "JSON Web Signature and Encryption Header Parameters" registry:
-
-- Header Parameter Name: ek
-- Header Parameter Description: KEM ciphertext
-- Header Parameter Usage Location(s): JWE
-- Change Controller: IESG
-- Specification Document(s): [[TBD: This RFC]]
-
-The following entries are added to the "JSON Web Signature and Encryption Algorithms" registry:
 
 - Algorithm Name: ML-KEM-512
 - Algorithm Description: PQ-KEM that uses ML-KEM-512 PQ-KEM.
